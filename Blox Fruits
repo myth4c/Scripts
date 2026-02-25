@@ -1,0 +1,204 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local winX, winY = 100, 100
+local winW, winH = 240, 110
+
+local autoFarming = false
+local chestIndex = 1
+
+local bgColor = Color3.new(0.13, 0.13, 0.13)
+local btnColor = Color3.new(0.25, 0.25, 0.25)
+local toggleOnColor = Color3.new(0.2, 0.4, 0.9)
+local toggleOffColor = Color3.new(0.3, 0.3, 0.35)
+
+local function makeRoundedRect(ox, oy, w, h, radius, color, zi)
+    local parts = {}
+    local function addSquare(dx, dy, sw, sh)
+        local s = Drawing.new("Square")
+        s.Position = Vector2.new(ox + dx, oy + dy)
+        s.Size = Vector2.new(sw, sh)
+        s.Color = color
+        s.Filled = true
+        s.Visible = true
+        s.ZIndex = zi
+        table.insert(parts, {d = s, ox = dx, oy = dy, isCircle = false})
+    end
+    local function addCircle(dx, dy)
+        local c = Drawing.new("Circle")
+        c.Position = Vector2.new(ox + dx, oy + dy)
+        c.Radius = radius
+        c.Color = color
+        c.Filled = true
+        c.Visible = true
+        c.NumSides = 32
+        c.ZIndex = zi
+        table.insert(parts, {d = c, ox = dx, oy = dy, isCircle = true})
+    end
+    addSquare(radius, 0, w - radius * 2, h)
+    addSquare(0, radius, radius, h - radius * 2)
+    addSquare(w - radius, radius, radius, h - radius * 2)
+    addCircle(radius, radius)
+    addCircle(w - radius, radius)
+    addCircle(radius, h - radius)
+    addCircle(w - radius, h - radius)
+    return parts
+end
+
+local function moveRoundedRect(parts, nx, ny)
+    for _, p in pairs(parts) do
+        p.d.Position = Vector2.new(nx + p.ox, ny + p.oy)
+    end
+end
+
+local function colorRoundedRect(parts, color)
+    for _, p in pairs(parts) do
+        p.d.Color = color
+    end
+end
+
+local windowParts = makeRoundedRect(winX, winY, winW, winH, 10, bgColor, 1)
+local btnParts = makeRoundedRect(winX + 15, winY + 48, winW - 30, 42, 8, btnColor, 2)
+local toggleParts = makeRoundedRect(winX + winW - 58, winY + 58, 32, 22, 6, toggleOffColor, 3)
+
+local titleText = Drawing.new("Text")
+titleText.Text = "Myth4c's Script"
+titleText.Position = Vector2.new(winX + 15, winY + 14)
+titleText.Color = Color3.new(0.9, 0.4, 0.6)
+titleText.Size = 16
+titleText.Visible = true
+titleText.ZIndex = 3
+titleText.Font = Drawing.Fonts.Monospace
+
+local btnLabel = Drawing.new("Text")
+btnLabel.Text = "Auto Farm Chest"
+btnLabel.Position = Vector2.new(winX + 25, winY + 59)
+btnLabel.Color = Color3.new(0.85, 0.85, 0.85)
+btnLabel.Size = 13
+btnLabel.Visible = true
+btnLabel.ZIndex = 4
+btnLabel.Font = Drawing.Fonts.Monospace
+
+local function updateAll()
+    moveRoundedRect(windowParts, winX, winY)
+    moveRoundedRect(btnParts, winX + 15, winY + 48)
+    moveRoundedRect(toggleParts, winX + winW - 58, winY + 58)
+    titleText.Position = Vector2.new(winX + 15, winY + 14)
+    btnLabel.Position = Vector2.new(winX + 25, winY + 59)
+end
+
+local function isInsideTitleBar(x, y)
+    return x >= winX and x <= winX + winW and y >= winY and y <= winY + 38
+end
+
+local function isInsideToggle(x, y)
+    return x >= winX + winW - 58 and x <= winX + winW - 26 and y >= winY + 58 and y <= winY + 80
+end
+
+local function teleportToChest(targetPart)
+    local Character = LocalPlayer.Character
+    if not Character then return end
+    local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not HumanoidRootPart then return end
+
+    local startPos = HumanoidRootPart.Position
+    local targetPos = Vector3.new(targetPart.Position.X, targetPart.Position.Y + 3, targetPart.Position.Z)
+    local dx = targetPos.X - startPos.X
+    local dy = targetPos.Y - startPos.Y
+    local dz = targetPos.Z - startPos.Z
+    local distance = math.sqrt(dx*dx + dy*dy + dz*dz)
+    local speed = 400
+    local duration = distance / speed
+    local steps = 100
+    local stepTime = duration / steps
+
+    for i = 1, steps do
+        if not autoFarming then return end
+        local alpha = i / steps
+        HumanoidRootPart.Position = Vector3.new(
+            startPos.X + (targetPos.X - startPos.X) * alpha,
+            startPos.Y + (targetPos.Y - startPos.Y) * alpha,
+            startPos.Z + (targetPos.Z - startPos.Z) * alpha
+        )
+        HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+        HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        task.wait(stepTime)
+    end
+
+    HumanoidRootPart.Position = targetPos
+    HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+    HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+end
+
+task.spawn(function()
+    while true do
+        if autoFarming then
+            local ChestModels = game.Workspace:FindFirstChild("ChestModels")
+            if ChestModels then
+                local children = ChestModels:GetChildren()
+                if #children > 0 then
+                    if chestIndex > #children then
+                        chestIndex = 1
+                    end
+                    local model = children[chestIndex]
+                    if model then
+                        local targetPart = model:FindFirstChild("RootPart")
+                        if targetPart then
+                            notify("Going to chest " .. chestIndex .. "/" .. #children, "Myth4c's Script", 2)
+                            teleportToChest(targetPart)
+                            chestIndex = chestIndex + 1
+                        else
+                            chestIndex = chestIndex + 1
+                        end
+                    end
+                end
+            end
+            task.wait(0.5)
+        else
+            task.wait(0.1)
+        end
+    end
+end)
+
+task.spawn(function()
+    local dragging = false
+    local dragOffX, dragOffY = 0, 0
+    local wasPressed = false
+
+    while true do
+        local mouse = LocalPlayer:GetMouse()
+        local mx, my = mouse.X, mouse.Y
+        local pressing = ismouse1pressed()
+
+        if pressing and not wasPressed then
+            if isInsideTitleBar(mx, my) then
+                dragging = true
+                dragOffX = mx - winX
+                dragOffY = my - winY
+            elseif isInsideToggle(mx, my) then
+                autoFarming = not autoFarming
+                if autoFarming then
+                    chestIndex = 1
+                    colorRoundedRect(toggleParts, toggleOnColor)
+                    notify("Auto Farm Started!", "Myth4c's Script", 2)
+                else
+                    colorRoundedRect(toggleParts, toggleOffColor)
+                    notify("Auto Farm Stopped!", "Myth4c's Script", 2)
+                end
+            end
+        end
+
+        if not pressing then
+            dragging = false
+        end
+
+        if dragging and pressing then
+            winX = mx - dragOffX
+            winY = my - dragOffY
+            updateAll()
+        end
+
+        wasPressed = pressing
+        task.wait(0.01)
+    end
+end)
