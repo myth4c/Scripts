@@ -255,30 +255,25 @@ btn0Label.Text = "Auto Farm Nearest"; btn0Label.Position = Vector2.new(cx0+32, f
 btn0Label.Color = Color3.new(0,1,0); btn0Label.Size = 12
 btn0Label.Visible = false; btn0Label.ZIndex = 4; btn0Label.Font = Drawing.Fonts.Monospace
 
-
 local btn1Label = Drawing.new("Text")
 btn1Label.Text = "Auto Farm Chest"; btn1Label.Position = Vector2.new(cx0+32, fcy0+42)
 btn1Label.Color = Color3.new(1,0.85,0); btn1Label.Size = 12
 btn1Label.Visible = false; btn1Label.ZIndex = 4; btn1Label.Font = Drawing.Fonts.Monospace
-
 
 local btn2Label = Drawing.new("Text")
 btn2Label.Text = "Fruit ESP"; btn2Label.Position = Vector2.new(cx0+32, fcy0+76)
 btn2Label.Color = Color3.new(0,1,0); btn2Label.Size = 12
 btn2Label.Visible = false; btn2Label.ZIndex = 4; btn2Label.Font = Drawing.Fonts.Monospace
 
-
 local btn3Label = Drawing.new("Text")
 btn3Label.Text = "Auto Farm Fruits"; btn3Label.Position = Vector2.new(cx0+32, fcy0+110)
 btn3Label.Color = Color3.new(1,0.85,0); btn3Label.Size = 12
 btn3Label.Visible = false; btn3Label.ZIndex = 4; btn3Label.Font = Drawing.Fonts.Monospace
 
-
 local btn4Label = Drawing.new("Text")
 btn4Label.Text = "Auto TP To Fruits"; btn4Label.Position = Vector2.new(cx0+32, fcy0+144)
 btn4Label.Color = Color3.new(1,0.3,0.3); btn4Label.Size = 12
 btn4Label.Visible = false; btn4Label.ZIndex = 4; btn4Label.Font = Drawing.Fonts.Monospace
-
 
 local speedTitleLabel = Drawing.new("Text")
 speedTitleLabel.Text = "Farm Speed:"; speedTitleLabel.Position = Vector2.new(cx0+10, fcy0+178)
@@ -357,7 +352,6 @@ local function showPage(page)
         setVisible(btn5Parts,true); setVisible(speedMinusParts,true); setVisible(speedPlusParts,true)
         btn0Label.Visible=true; btn1Label.Visible=true; btn2Label.Visible=true
         btn3Label.Visible=true; btn4Label.Visible=true
-        -- checkmarks only show when their toggle is ON
         speedTitleLabel.Visible=true; speedValueLabel.Visible=true
         speedMinusLabel.Visible=true; speedPlusLabel.Visible=true
         moveRoundedRect(sideHighlight, winX, winY+titleH+44)
@@ -661,7 +655,7 @@ task.spawn(function()
                         if dist <= 1000 then
                             notify("Found: "..target.Name,"Myth4c's Script",2)
                             if dist > 10 then farmTweenTo(hrp, Vector3.new(root.Position.X,root.Position.Y+2,root.Position.Z+8)) end
-                            local clickTimer=0
+                            local lastClick=0
                             while autoFarmNearest and isAlive(target) do
                                 local r2 = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChildOfClass("BasePart")
                                 if r2 then
@@ -674,7 +668,7 @@ task.spawn(function()
                                         hrp.Velocity=Vector3.new(0,0,0); hrp.AssemblyLinearVelocity=Vector3.new(0,0,0)
                                     end
                                 end
-                                clickTimer=clickTimer+1; if clickTimer>=12 then mouse1click(); clickTimer=0 end
+                                local now=os.clock(); if now-lastClick>=0.06 then mouse1click(); lastClick=now end
                                 task.wait()
                             end
                         end
