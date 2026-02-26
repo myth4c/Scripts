@@ -5,7 +5,7 @@ if not LocalPlayer then
 end
 
 local winX, winY = 80, 80
-local winW, winH = 480, 365
+local winW, winH = 480, 385
 local titleH     = 48
 local sideW      = 130
 local RADIUS     = 6
@@ -197,7 +197,7 @@ local cw0  = winW-sideW-20
 local fcy0 = cy0+28
 
 -- ─── HOME: Card 1 (STATUS) ────────────────────────────────────
-local homeCard1    = makeRoundedRect(cx0, cy0, cw0, 64, 5, cardColor, 2)
+local homeCard1    = makeRoundedRect(cx0, cy0, cw0, 84, 5, cardColor, 2)
 local homeCard1Hdr = Drawing.new("Text")
 homeCard1Hdr.Text = "STATUS"; homeCard1Hdr.Position = Vector2.new(cx0+10, cy0+6)
 homeCard1Hdr.Color = dimTextColor; homeCard1Hdr.Size = 11
@@ -206,58 +206,66 @@ local homeCard1Sep  = makeLine(cx0+6, cy0+20, cx0+cw0-6, cy0+20, sepColor, 1, 3)
 local homeStatusDot = Drawing.new("Circle")
 homeStatusDot.Radius = 5; homeStatusDot.Filled = true; homeStatusDot.NumSides = 32
 homeStatusDot.Color = accentColor; homeStatusDot.ZIndex = 4; homeStatusDot.Visible = true
-homeStatusDot.Position = Vector2.new(cx0+16, cy0+38)
+homeStatusDot.Position = Vector2.new(cx0+16, cy0+32)
 local homeWelcome1 = Drawing.new("Text")
-homeWelcome1.Text = "Welcome!"; homeWelcome1.Position = Vector2.new(cx0+28, cy0+27)
+homeWelcome1.Text = "Welcome!"; homeWelcome1.Position = Vector2.new(cx0+28, cy0+26)
 homeWelcome1.Color = Color3.new(1,1,1); homeWelcome1.Size = 14
 homeWelcome1.Visible = true; homeWelcome1.ZIndex = 4; homeWelcome1.Font = Drawing.Fonts.Monospace
 local homeWelcome2 = Drawing.new("Text")
-homeWelcome2.Text = "Made by Myth4c, Inspiration for Ui @lito2w"; homeWelcome2.Position = Vector2.new(cx0+28, cy0+44)
-homeWelcome2.Color = accentColor; homeWelcome2.Size = 12
+homeWelcome2.Text = "Made by Myth4c"; homeWelcome2.Position = Vector2.new(cx0+10, cy0+44)
+homeWelcome2.Color = accentColor; homeWelcome2.Size = 11
 homeWelcome2.Visible = true; homeWelcome2.ZIndex = 4; homeWelcome2.Font = Drawing.Fonts.Monospace
+local homeWelcome3 = Drawing.new("Text")
+homeWelcome3.Text = "Inspiration for Ui @lito2w"; homeWelcome3.Position = Vector2.new(cx0+10, cy0+57)
+homeWelcome3.Color = dimTextColor; homeWelcome3.Size = 11
+homeWelcome3.Visible = true; homeWelcome3.ZIndex = 4; homeWelcome3.Font = Drawing.Fonts.Monospace
+local homeWelcome4 = Drawing.new("Text")
+homeWelcome4.Text = "Auto Farm Npc Feature from @zlxcyyyc"; homeWelcome4.Position = Vector2.new(cx0+10, cy0+70)
+homeWelcome4.Color = dimTextColor; homeWelcome4.Size = 11
+homeWelcome4.Visible = true; homeWelcome4.ZIndex = 4; homeWelcome4.Font = Drawing.Fonts.Monospace
 
 -- ─── HOME: Card 2 (INFO) ─────────────────────────────────────
-local homeCard2    = makeRoundedRect(cx0, cy0+72, cw0, 72, 5, cardColor, 2)
+local homeCard2    = makeRoundedRect(cx0, cy0+92, cw0, 72, 5, cardColor, 2)
 local homeCard2Hdr = Drawing.new("Text")
-homeCard2Hdr.Text = "INFO"; homeCard2Hdr.Position = Vector2.new(cx0+10, cy0+78)
+homeCard2Hdr.Text = "INFO"; homeCard2Hdr.Position = Vector2.new(cx0+10, cy0+98)
 homeCard2Hdr.Color = dimTextColor; homeCard2Hdr.Size = 11
 homeCard2Hdr.Visible = true; homeCard2Hdr.ZIndex = 4; homeCard2Hdr.Font = Drawing.Fonts.Monospace
-local homeCard2Sep = makeLine(cx0+6, cy0+92, cx0+cw0-6, cy0+92, sepColor, 1, 3)
+local homeCard2Sep = makeLine(cx0+6, cy0+112, cx0+cw0-6, cy0+112, sepColor, 1, 3)
 local homeEspText  = Drawing.new("Text")
 homeEspText.Text = "If Fruit ESP Says\nSpawned Fruit =\nSpawned / Fruit Notifier"
-homeEspText.Position = Vector2.new(cx0+10, cy0+97)
+homeEspText.Position = Vector2.new(cx0+10, cy0+117)
 homeEspText.Color = Color3.new(0.5,0.8,1); homeEspText.Size = 12
 homeEspText.Visible = true; homeEspText.ZIndex = 4; homeEspText.Font = Drawing.Fonts.Monospace
 
 -- ─── HOME: Card 3 (DETECTION) ────────────────────────────────
-local homeCard3    = makeRoundedRect(cx0, cy0+152, cw0, 90, 5, cardColor, 2)
+local homeCard3    = makeRoundedRect(cx0, cy0+172, cw0, 90, 5, cardColor, 2)
 local homeCard3Hdr = Drawing.new("Text")
-homeCard3Hdr.Text = "DETECTION"; homeCard3Hdr.Position = Vector2.new(cx0+10, cy0+158)
+homeCard3Hdr.Text = "DETECTION"; homeCard3Hdr.Position = Vector2.new(cx0+10, cy0+178)
 homeCard3Hdr.Color = dimTextColor; homeCard3Hdr.Size = 11
 homeCard3Hdr.Visible = true; homeCard3Hdr.ZIndex = 4; homeCard3Hdr.Font = Drawing.Fonts.Monospace
-local homeCard3Sep = makeLine(cx0+6, cy0+172, cx0+cw0-6, cy0+172, sepColor, 1, 3)
+local homeCard3Sep = makeLine(cx0+6, cy0+192, cx0+cw0-6, cy0+192, sepColor, 1, 3)
 
 local dotGreen = Drawing.new("Circle")
 dotGreen.Radius=5; dotGreen.Filled=true; dotGreen.NumSides=32; dotGreen.ZIndex=5; dotGreen.Visible=true
-dotGreen.Color=Color3.new(0,1,0); dotGreen.Position=Vector2.new(cx0+16, cy0+185)
+dotGreen.Color=Color3.new(0,1,0); dotGreen.Position=Vector2.new(cx0+16, cy0+205)
 local detText1 = Drawing.new("Text")
-detText1.Text="Not Detected At All"; detText1.Position=Vector2.new(cx0+28, cy0+179)
+detText1.Text="Not Detected At All"; detText1.Position=Vector2.new(cx0+28, cy0+199)
 detText1.Color=Color3.new(1,1,1); detText1.Size=12
 detText1.Visible=true; detText1.ZIndex=4; detText1.Font=Drawing.Fonts.Monospace
 
 local dotYellow = Drawing.new("Circle")
 dotYellow.Radius=5; dotYellow.Filled=true; dotYellow.NumSides=32; dotYellow.ZIndex=5; dotYellow.Visible=true
-dotYellow.Color=Color3.new(1,0.85,0); dotYellow.Position=Vector2.new(cx0+16, cy0+203)
+dotYellow.Color=Color3.new(1,0.85,0); dotYellow.Position=Vector2.new(cx0+16, cy0+223)
 local detText2 = Drawing.new("Text")
-detText2.Text="Glitchy"; detText2.Position=Vector2.new(cx0+28, cy0+197)
+detText2.Text="Glitchy"; detText2.Position=Vector2.new(cx0+28, cy0+217)
 detText2.Color=Color3.new(1,1,1); detText2.Size=12
 detText2.Visible=true; detText2.ZIndex=4; detText2.Font=Drawing.Fonts.Monospace
 
 local dotRed = Drawing.new("Circle")
 dotRed.Radius=5; dotRed.Filled=true; dotRed.NumSides=32; dotRed.ZIndex=5; dotRed.Visible=true
-dotRed.Color=Color3.new(1,0,0); dotRed.Position=Vector2.new(cx0+16, cy0+221)
+dotRed.Color=Color3.new(1,0,0); dotRed.Position=Vector2.new(cx0+16, cy0+241)
 local detText3 = Drawing.new("Text")
-detText3.Text="Almost Detected"; detText3.Position=Vector2.new(cx0+28, cy0+215)
+detText3.Text="Almost Detected"; detText3.Position=Vector2.new(cx0+28, cy0+235)
 detText3.Color=Color3.new(1,1,1); detText3.Size=12
 detText3.Visible=true; detText3.ZIndex=4; detText3.Font=Drawing.Fonts.Monospace
 
@@ -389,6 +397,7 @@ local function showPage(page)
     if page == "home" then
         setVisible(homeCard1,true); homeCard1Hdr.Visible=true; homeCard1Sep.Visible=true
         homeStatusDot.Visible=true; homeWelcome1.Visible=true; homeWelcome2.Visible=true
+        homeWelcome3.Visible=true; homeWelcome4.Visible=true
         setVisible(homeCard2,true); homeCard2Hdr.Visible=true; homeCard2Sep.Visible=true
         homeEspText.Visible=true
         setVisible(homeCard3,true); homeCard3Hdr.Visible=true; homeCard3Sep.Visible=true
@@ -420,6 +429,7 @@ local function showPage(page)
     else
         setVisible(homeCard1,false); homeCard1Hdr.Visible=false; homeCard1Sep.Visible=false
         homeStatusDot.Visible=false; homeWelcome1.Visible=false; homeWelcome2.Visible=false
+        homeWelcome3.Visible=false; homeWelcome4.Visible=false
         setVisible(homeCard2,false); homeCard2Hdr.Visible=false; homeCard2Sep.Visible=false
         homeEspText.Visible=false
         setVisible(homeCard3,false); homeCard3Hdr.Visible=false; homeCard3Sep.Visible=false
@@ -483,21 +493,23 @@ local function updateAll()
     moveRoundedRect(homeCard1,cx,cy)
     homeCard1Hdr.Position=Vector2.new(cx+10,cy+6)
     homeCard1Sep.From=Vector2.new(cx+6,cy+20); homeCard1Sep.To=Vector2.new(cx+cw-6,cy+20)
-    homeStatusDot.Position=Vector2.new(cx+16,cy+38)
-    homeWelcome1.Position=Vector2.new(cx+28,cy+27)
-    homeWelcome2.Position=Vector2.new(cx+28,cy+44)
+    homeStatusDot.Position=Vector2.new(cx+16,cy+32)
+    homeWelcome1.Position=Vector2.new(cx+28,cy+26)
+    homeWelcome2.Position=Vector2.new(cx+10,cy+44)
+    homeWelcome3.Position=Vector2.new(cx+10,cy+57)
+    homeWelcome4.Position=Vector2.new(cx+10,cy+70)
 
-    moveRoundedRect(homeCard2,cx,cy+72)
-    homeCard2Hdr.Position=Vector2.new(cx+10,cy+78)
-    homeCard2Sep.From=Vector2.new(cx+6,cy+92); homeCard2Sep.To=Vector2.new(cx+cw-6,cy+92)
-    homeEspText.Position=Vector2.new(cx+10,cy+97)
+    moveRoundedRect(homeCard2,cx,cy+92)
+    homeCard2Hdr.Position=Vector2.new(cx+10,cy+98)
+    homeCard2Sep.From=Vector2.new(cx+6,cy+112); homeCard2Sep.To=Vector2.new(cx+cw-6,cy+112)
+    homeEspText.Position=Vector2.new(cx+10,cy+117)
 
-    moveRoundedRect(homeCard3,cx,cy+152)
-    homeCard3Hdr.Position=Vector2.new(cx+10,cy+158)
-    homeCard3Sep.From=Vector2.new(cx+6,cy+172); homeCard3Sep.To=Vector2.new(cx+cw-6,cy+172)
-    dotGreen.Position=Vector2.new(cx+16,cy+185); detText1.Position=Vector2.new(cx+28,cy+179)
-    dotYellow.Position=Vector2.new(cx+16,cy+203); detText2.Position=Vector2.new(cx+28,cy+197)
-    dotRed.Position=Vector2.new(cx+16,cy+221); detText3.Position=Vector2.new(cx+28,cy+215)
+    moveRoundedRect(homeCard3,cx,cy+172)
+    homeCard3Hdr.Position=Vector2.new(cx+10,cy+178)
+    homeCard3Sep.From=Vector2.new(cx+6,cy+192); homeCard3Sep.To=Vector2.new(cx+cw-6,cy+192)
+    dotGreen.Position=Vector2.new(cx+16,cy+205); detText1.Position=Vector2.new(cx+28,cy+199)
+    dotYellow.Position=Vector2.new(cx+16,cy+223); detText2.Position=Vector2.new(cx+28,cy+217)
+    dotRed.Position=Vector2.new(cx+16,cy+241); detText3.Position=Vector2.new(cx+28,cy+235)
 
     featTitle.Position=Vector2.new(cx,cy)
     featSep.From=Vector2.new(cx,cy+20); featSep.To=Vector2.new(cx+cw,cy+20)
