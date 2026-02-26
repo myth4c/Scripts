@@ -1,30 +1,43 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local winX, winY = 100, 100
-local winW, winH = 340, 265
-local titleH = 35
-local sideW = 70
-local RADIUS = 12
+local winX, winY = 80, 80
+local winW, winH = 480, 365
+local titleH     = 48
+local sideW      = 130
+local RADIUS     = 6
 
-local autoFarming = false
-local fruitEsp = false
-local chamEsp = false
-local autoFruits = false
-local autoTpFruit = false
-local chamBoxes = {}
+-- ─── State ───────────────────────────────────────────────────
+local autoFarming     = false
+local fruitEsp        = false
+local chamEsp         = false
+local autoFruits      = false
+local autoTpFruit     = false
+local autoFarmNearest = false
+local chamBoxes  = {}
 local chestIndex = 1
-local espLabels = {}
+local espLabels  = {}
 local currentPage = "home"
 
-local bgColor       = Color3.new(0.13, 0.13, 0.13)
-local sideColor     = Color3.new(0.10, 0.10, 0.10)
-local titleColor    = Color3.new(0.18, 0.18, 0.18)
-local btnColor      = Color3.new(0.25, 0.25, 0.25)
-local toggleOnColor = Color3.new(0.2, 0.4, 0.9)
-local toggleOffColor= Color3.new(0.3, 0.3, 0.35)
-local sideActiveBg  = Color3.new(0.20, 0.20, 0.20)
+local FARM_SPEED = 310
+local MIN_SPEED  = 50
+local MAX_SPEED  = 1000
+local SPEED_STEP = 50
 
+-- ─── Colors (Windy dark teal palette) ────────────────────────
+local bgColor         = Color3.new(0.06, 0.08, 0.09)
+local sideColor       = Color3.new(0.08, 0.10, 0.11)
+local sideActiveColor = Color3.new(0.0,  0.48, 0.24)
+local cardColor       = Color3.new(0.10, 0.13, 0.14)
+local btnColor        = Color3.new(0.11, 0.14, 0.15)
+local toggleOnColor   = Color3.new(0.0,  0.48, 0.24)
+local toggleOffColor  = Color3.new(0.18, 0.22, 0.24)
+local accentColor     = Color3.new(0.0,  0.65, 0.32)
+local speedBtnColor   = Color3.new(0.14, 0.18, 0.19)
+local dimTextColor    = Color3.new(0.38, 0.50, 0.50)
+local sepColor        = Color3.new(0.13, 0.18, 0.19)
+
+-- ─── Drawing helpers ─────────────────────────────────────────
 local function makeRoundedRect(ox, oy, w, h, radius, color, zi)
     local parts = {}
     local function addSq(dx, dy, sw, sh)
@@ -39,8 +52,11 @@ local function makeRoundedRect(ox, oy, w, h, radius, color, zi)
         c.Color = color; c.Filled = true; c.Visible = true; c.NumSides = 32; c.ZIndex = zi
         table.insert(parts, {d=c, ox=dx, oy=dy})
     end
-    addSq(radius, 0, w-radius*2, h); addSq(0, radius, radius, h-radius*2); addSq(w-radius, radius, radius, h-radius*2)
-    addC(radius, radius); addC(w-radius, radius); addC(radius, h-radius); addC(w-radius, h-radius)
+    addSq(radius, 0, w-radius*2, h)
+    addSq(0, radius, radius, h-radius*2)
+    addSq(w-radius, radius, radius, h-radius*2)
+    addC(radius, radius); addC(w-radius, radius)
+    addC(radius, h-radius); addC(w-radius, h-radius)
     return parts
 end
 
@@ -58,10 +74,8 @@ local function makeRoundedRectTop(ox, oy, w, h, radius, color, zi)
         c.Color = color; c.Filled = true; c.Visible = true; c.NumSides = 32; c.ZIndex = zi
         table.insert(parts, {d=c, ox=dx, oy=dy})
     end
-    addSq(0, radius, w, h-radius)
-    addSq(radius, 0, w-radius*2, radius)
-    addC(radius, radius)
-    addC(w-radius, radius)
+    addSq(0, radius, w, h-radius); addSq(radius, 0, w-radius*2, radius)
+    addC(radius, radius); addC(w-radius, radius)
     return parts
 end
 
@@ -79,8 +93,7 @@ local function makeRoundedRectBL(ox, oy, w, h, radius, color, zi)
         c.Color = color; c.Filled = true; c.Visible = true; c.NumSides = 32; c.ZIndex = zi
         table.insert(parts, {d=c, ox=dx, oy=dy})
     end
-    addSq(0, 0, w, h-radius)
-    addSq(radius, h-radius, w-radius, radius)
+    addSq(0, 0, w, h-radius); addSq(radius, h-radius, w-radius, radius)
     addC(radius, h-radius)
     return parts
 end
@@ -94,187 +107,385 @@ end
 local function setVisible(parts, v)
     for _, p in pairs(parts) do p.d.Visible = v end
 end
+local function makeLine(x1, y1, x2, y2, color, thickness, zi)
+    local l = Drawing.new("Line")
+    l.From = Vector2.new(x1,y1); l.To = Vector2.new(x2,y2)
+    l.Color = color; l.Thickness = thickness; l.Visible = true; l.ZIndex = zi
+    return l
+end
 
-local windowParts    = makeRoundedRect(winX, winY, winW, winH, RADIUS, bgColor, 1)
-local titleBarParts  = makeRoundedRectTop(winX, winY, winW, titleH, RADIUS, titleColor, 2)
-local sidePanelParts = makeRoundedRectBL(winX, winY+titleH, sideW, winH-titleH, RADIUS, sideColor, 2)
-local sideActiveMark = makeRoundedRect(winX, winY+titleH, sideW, 30, 4, sideActiveBg, 3)
+-- ─── Window frame ─────────────────────────────────────────────
+local windowParts  = makeRoundedRect(winX, winY, winW, winH, RADIUS, bgColor, 1)
+local titleBgParts = makeRoundedRectTop(winX, winY, winW, titleH, RADIUS, bgColor, 2)
+local sideParts    = makeRoundedRectBL(winX, winY+titleH, sideW, winH-titleH, RADIUS, sideColor, 2)
+local accentLine   = makeLine(winX, winY+titleH, winX+winW, winY+titleH, accentColor, 2, 3)
+local sideLine     = makeLine(winX+sideW, winY+titleH, winX+sideW, winY+winH, sepColor, 1, 3)
 
+-- ─── Title bar ────────────────────────────────────────────────
 local titleText = Drawing.new("Text")
-titleText.Text = "Myth4c's Script"; titleText.Position = Vector2.new(winX+sideW+10, winY+10)
-titleText.Color = Color3.new(0.9, 0.4, 0.6); titleText.Size = 16
+titleText.Text = "Myth4c's Script"; titleText.Position = Vector2.new(winX+12, winY+7)
+titleText.Color = Color3.new(1,1,1); titleText.Size = 17
 titleText.Visible = true; titleText.ZIndex = 4; titleText.Font = Drawing.Fonts.Monospace
 
-local homeLabel = Drawing.new("Text")
-homeLabel.Text = "Home"; homeLabel.Position = Vector2.new(winX+sideW/2, winY+titleH+8)
-homeLabel.Color = Color3.new(1,1,1); homeLabel.Size = 14
-homeLabel.Visible = true; homeLabel.ZIndex = 4
-homeLabel.Font = Drawing.Fonts.Monospace; homeLabel.Center = true
+local subtitleText = Drawing.new("Text")
+subtitleText.Text = "Blox Fruits Script"; subtitleText.Position = Vector2.new(winX+12, winY+28)
+subtitleText.Color = accentColor; subtitleText.Size = 11
+subtitleText.Visible = true; subtitleText.ZIndex = 4; subtitleText.Font = Drawing.Fonts.Monospace
 
-local featuresLabel = Drawing.new("Text")
-featuresLabel.Text = "Features"; featuresLabel.Position = Vector2.new(winX+sideW/2, winY+titleH+42)
-featuresLabel.Color = Color3.new(0.7,0.7,0.7); featuresLabel.Size = 14
-featuresLabel.Visible = true; featuresLabel.ZIndex = 4
-featuresLabel.Font = Drawing.Fonts.Monospace; featuresLabel.Center = true
+-- ─── Sidebar active highlight ─────────────────────────────────
+local sideHighlight = makeRoundedRect(winX, winY+titleH, sideW, 44, 0, sideActiveColor, 3)
 
-local homeText = Drawing.new("Text")
-homeText.Text = "Welcome!\nMade by Myth4c"; homeText.Position = Vector2.new(winX+sideW+15, winY+titleH+20)
-homeText.Color = Color3.new(0.8,0.8,0.8); homeText.Size = 14
-homeText.Visible = true; homeText.ZIndex = 4; homeText.Font = Drawing.Fonts.Monospace
+-- ─── Sidebar Tab 0: Home ──────────────────────────────────────
+local tab0BadgeParts = makeRoundedRect(winX+8, winY+titleH+12, 22, 20, 3, Color3.new(0,0.35,0.18), 4)
+local tab0BadgeText  = Drawing.new("Text")
+tab0BadgeText.Text = "H"; tab0BadgeText.Position = Vector2.new(winX+19, winY+titleH+14)
+tab0BadgeText.Color = Color3.new(1,1,1); tab0BadgeText.Size = 12; tab0BadgeText.Center = true
+tab0BadgeText.Visible = true; tab0BadgeText.ZIndex = 5; tab0BadgeText.Font = Drawing.Fonts.Monospace
+local tab0LabelText = Drawing.new("Text")
+tab0LabelText.Text = "Home"; tab0LabelText.Position = Vector2.new(winX+36, winY+titleH+15)
+tab0LabelText.Color = Color3.new(1,1,1); tab0LabelText.Size = 13
+tab0LabelText.Visible = true; tab0LabelText.ZIndex = 5; tab0LabelText.Font = Drawing.Fonts.Monospace
 
-local homeStatus = Drawing.new("Text")
-homeStatus.Text = "  - Not Detected At All\n  - Glitchy\n  - Almost Detected"
-homeStatus.Position = Vector2.new(winX+sideW+25, winY+titleH+110)
-homeStatus.Color = Color3.new(0.9,0.9,0.9); homeStatus.Size = 13
-homeStatus.Visible = true; homeStatus.ZIndex = 4; homeStatus.Font = Drawing.Fonts.Monospace
+-- ─── Sidebar Tab 1: Features ──────────────────────────────────
+local tab1BadgeParts = makeRoundedRect(winX+8, winY+titleH+56, 22, 20, 3, Color3.new(0.15,0.18,0.19), 4)
+local tab1BadgeText  = Drawing.new("Text")
+tab1BadgeText.Text = "F"; tab1BadgeText.Position = Vector2.new(winX+19, winY+titleH+58)
+tab1BadgeText.Color = Color3.new(0.6,0.7,0.7); tab1BadgeText.Size = 12; tab1BadgeText.Center = true
+tab1BadgeText.Visible = true; tab1BadgeText.ZIndex = 5; tab1BadgeText.Font = Drawing.Fonts.Monospace
+local tab1LabelText = Drawing.new("Text")
+tab1LabelText.Text = "Features"; tab1LabelText.Position = Vector2.new(winX+36, winY+titleH+59)
+tab1LabelText.Color = Color3.new(0.6,0.7,0.7); tab1LabelText.Size = 13
+tab1LabelText.Visible = true; tab1LabelText.ZIndex = 5; tab1LabelText.Font = Drawing.Fonts.Monospace
 
-local espInfoText = Drawing.new("Text")
-espInfoText.Text = "If Fruit ESP Says\nSpawned Fruit = \nSpawned / Fruit Notifier"
-espInfoText.Position = Vector2.new(winX+sideW+15, winY+titleH+48)
-espInfoText.Color = Color3.new(0.6, 0.8, 1); espInfoText.Size = 12
-espInfoText.Visible = true; espInfoText.ZIndex = 4; espInfoText.Font = Drawing.Fonts.Monospace
+-- ─── Build-time content coords ────────────────────────────────
+local cx0  = winX+sideW+10
+local cy0  = winY+titleH+10
+local cw0  = winW-sideW-20
+local fcy0 = cy0+28
+
+-- ─── HOME: Card 1 (STATUS) ────────────────────────────────────
+local homeCard1    = makeRoundedRect(cx0, cy0, cw0, 64, 5, cardColor, 2)
+local homeCard1Hdr = Drawing.new("Text")
+homeCard1Hdr.Text = "STATUS"; homeCard1Hdr.Position = Vector2.new(cx0+10, cy0+6)
+homeCard1Hdr.Color = dimTextColor; homeCard1Hdr.Size = 11
+homeCard1Hdr.Visible = true; homeCard1Hdr.ZIndex = 4; homeCard1Hdr.Font = Drawing.Fonts.Monospace
+local homeCard1Sep  = makeLine(cx0+6, cy0+20, cx0+cw0-6, cy0+20, sepColor, 1, 3)
+local homeStatusDot = Drawing.new("Circle")
+homeStatusDot.Radius = 5; homeStatusDot.Filled = true; homeStatusDot.NumSides = 32
+homeStatusDot.Color = accentColor; homeStatusDot.ZIndex = 4; homeStatusDot.Visible = true
+homeStatusDot.Position = Vector2.new(cx0+16, cy0+38)
+local homeWelcome1 = Drawing.new("Text")
+homeWelcome1.Text = "Welcome!"; homeWelcome1.Position = Vector2.new(cx0+28, cy0+27)
+homeWelcome1.Color = Color3.new(1,1,1); homeWelcome1.Size = 14
+homeWelcome1.Visible = true; homeWelcome1.ZIndex = 4; homeWelcome1.Font = Drawing.Fonts.Monospace
+local homeWelcome2 = Drawing.new("Text")
+homeWelcome2.Text = "Made by Myth4c"; homeWelcome2.Position = Vector2.new(cx0+28, cy0+44)
+homeWelcome2.Color = accentColor; homeWelcome2.Size = 12
+homeWelcome2.Visible = true; homeWelcome2.ZIndex = 4; homeWelcome2.Font = Drawing.Fonts.Monospace
+
+-- ─── HOME: Card 2 (INFO) ─────────────────────────────────────
+local homeCard2    = makeRoundedRect(cx0, cy0+72, cw0, 72, 5, cardColor, 2)
+local homeCard2Hdr = Drawing.new("Text")
+homeCard2Hdr.Text = "INFO"; homeCard2Hdr.Position = Vector2.new(cx0+10, cy0+78)
+homeCard2Hdr.Color = dimTextColor; homeCard2Hdr.Size = 11
+homeCard2Hdr.Visible = true; homeCard2Hdr.ZIndex = 4; homeCard2Hdr.Font = Drawing.Fonts.Monospace
+local homeCard2Sep = makeLine(cx0+6, cy0+92, cx0+cw0-6, cy0+92, sepColor, 1, 3)
+local homeEspText  = Drawing.new("Text")
+homeEspText.Text = "If Fruit ESP Says\nSpawned Fruit =\nSpawned / Fruit Notifier"
+homeEspText.Position = Vector2.new(cx0+10, cy0+97)
+homeEspText.Color = Color3.new(0.5,0.8,1); homeEspText.Size = 12
+homeEspText.Visible = true; homeEspText.ZIndex = 4; homeEspText.Font = Drawing.Fonts.Monospace
+
+-- ─── HOME: Card 3 (DETECTION) ────────────────────────────────
+local homeCard3    = makeRoundedRect(cx0, cy0+152, cw0, 90, 5, cardColor, 2)
+local homeCard3Hdr = Drawing.new("Text")
+homeCard3Hdr.Text = "DETECTION"; homeCard3Hdr.Position = Vector2.new(cx0+10, cy0+158)
+homeCard3Hdr.Color = dimTextColor; homeCard3Hdr.Size = 11
+homeCard3Hdr.Visible = true; homeCard3Hdr.ZIndex = 4; homeCard3Hdr.Font = Drawing.Fonts.Monospace
+local homeCard3Sep = makeLine(cx0+6, cy0+172, cx0+cw0-6, cy0+172, sepColor, 1, 3)
 
 local dotGreen = Drawing.new("Circle")
-dotGreen.Radius = 5; dotGreen.Filled = true; dotGreen.NumSides = 32
-dotGreen.Color = Color3.new(0, 1, 0); dotGreen.Visible = true; dotGreen.ZIndex = 5
-dotGreen.Position = Vector2.new(winX+sideW+20, winY+titleH+116)
+dotGreen.Radius=5; dotGreen.Filled=true; dotGreen.NumSides=32; dotGreen.ZIndex=5; dotGreen.Visible=true
+dotGreen.Color=Color3.new(0,1,0); dotGreen.Position=Vector2.new(cx0+16, cy0+185)
+local detText1 = Drawing.new("Text")
+detText1.Text="Not Detected At All"; detText1.Position=Vector2.new(cx0+28, cy0+179)
+detText1.Color=Color3.new(1,1,1); detText1.Size=12
+detText1.Visible=true; detText1.ZIndex=4; detText1.Font=Drawing.Fonts.Monospace
 
 local dotYellow = Drawing.new("Circle")
-dotYellow.Radius = 5; dotYellow.Filled = true; dotYellow.NumSides = 32
-dotYellow.Color = Color3.new(1, 0.85, 0); dotYellow.Visible = true; dotYellow.ZIndex = 5
-dotYellow.Position = Vector2.new(winX+sideW+20, winY+titleH+132)
+dotYellow.Radius=5; dotYellow.Filled=true; dotYellow.NumSides=32; dotYellow.ZIndex=5; dotYellow.Visible=true
+dotYellow.Color=Color3.new(1,0.85,0); dotYellow.Position=Vector2.new(cx0+16, cy0+203)
+local detText2 = Drawing.new("Text")
+detText2.Text="Glitchy"; detText2.Position=Vector2.new(cx0+28, cy0+197)
+detText2.Color=Color3.new(1,1,1); detText2.Size=12
+detText2.Visible=true; detText2.ZIndex=4; detText2.Font=Drawing.Fonts.Monospace
 
 local dotRed = Drawing.new("Circle")
-dotRed.Radius = 5; dotRed.Filled = true; dotRed.NumSides = 32
-dotRed.Color = Color3.new(1, 0, 0); dotRed.Visible = true; dotRed.ZIndex = 5
-dotRed.Position = Vector2.new(winX+sideW+20, winY+titleH+148)
+dotRed.Radius=5; dotRed.Filled=true; dotRed.NumSides=32; dotRed.ZIndex=5; dotRed.Visible=true
+dotRed.Color=Color3.new(1,0,0); dotRed.Position=Vector2.new(cx0+16, cy0+221)
+local detText3 = Drawing.new("Text")
+detText3.Text="Almost Detected"; detText3.Position=Vector2.new(cx0+28, cy0+215)
+detText3.Color=Color3.new(1,1,1); detText3.Size=12
+detText3.Visible=true; detText3.ZIndex=4; detText3.Font=Drawing.Fonts.Monospace
 
-local contentX = winX+sideW+10; local contentY = winY+titleH+10; local contentW = winW-sideW-20
+-- ─── FEATURES page ────────────────────────────────────────────
+local featTitle = Drawing.new("Text")
+featTitle.Text = "Feature Settings"; featTitle.Position = Vector2.new(cx0, cy0)
+featTitle.Color = Color3.new(1,1,1); featTitle.Size = 16
+featTitle.Visible = false; featTitle.ZIndex = 4; featTitle.Font = Drawing.Fonts.Monospace
+local featSep = makeLine(cx0, cy0+20, cx0+cw0, cy0+20, sepColor, 1, 3)
+featSep.Visible = false
 
-local btn1Parts    = makeRoundedRect(contentX, contentY, contentW, 42, 5, btnColor, 2)
-local toggle1Parts = makeRoundedRect(contentX+contentW-42, contentY+10, 32, 22, 5, toggleOffColor, 3)
-local btn2Parts    = makeRoundedRect(contentX, contentY+52, contentW, 42, 5, btnColor, 2)
-local toggle2Parts = makeRoundedRect(contentX+contentW-42, contentY+62, 32, 22, 5, toggleOffColor, 3)
-local btn3Parts    = makeRoundedRect(contentX, contentY+104, contentW, 42, 5, btnColor, 2)
-local toggle3Parts = makeRoundedRect(contentX+contentW-42, contentY+114, 32, 22, 5, toggleOffColor, 3)
-local btn4Parts    = makeRoundedRect(contentX, contentY+156, contentW, 42, 5, btnColor, 2)
-local toggle4Parts = makeRoundedRect(contentX+contentW-42, contentY+166, 32, 22, 5, toggleOffColor, 3)
+local btn0Parts    = makeRoundedRect(cx0, fcy0,       cw0, 35, 5, btnColor, 2)
+local toggle0Parts = makeRoundedRect(cx0+cw0-42, fcy0+7, 32, 21, 5, toggleOffColor, 3)
+local btn1Parts    = makeRoundedRect(cx0, fcy0+41,    cw0, 35, 5, btnColor, 2)
+local toggle1Parts = makeRoundedRect(cx0+cw0-42, fcy0+48, 32, 21, 5, toggleOffColor, 3)
+local btn2Parts    = makeRoundedRect(cx0, fcy0+82,    cw0, 35, 5, btnColor, 2)
+local toggle2Parts = makeRoundedRect(cx0+cw0-42, fcy0+89, 32, 21, 5, toggleOffColor, 3)
+local btn3Parts    = makeRoundedRect(cx0, fcy0+123,   cw0, 35, 5, btnColor, 2)
+local toggle3Parts = makeRoundedRect(cx0+cw0-42, fcy0+130, 32, 21, 5, toggleOffColor, 3)
+local btn4Parts    = makeRoundedRect(cx0, fcy0+164,   cw0, 35, 5, btnColor, 2)
+local toggle4Parts = makeRoundedRect(cx0+cw0-42, fcy0+171, 32, 21, 5, toggleOffColor, 3)
+local btn5Parts    = makeRoundedRect(cx0, fcy0+205,   cw0, 35, 5, btnColor, 2)
+local speedMinusParts = makeRoundedRect(cx0+cw0-82, fcy0+212, 28, 21, 5, speedBtnColor, 3)
+local speedPlusParts  = makeRoundedRect(cx0+cw0-42, fcy0+212, 28, 21, 5, speedBtnColor, 3)
+
+local btn0Label = Drawing.new("Text")
+btn0Label.Text = "Auto Farm Nearest"; btn0Label.Position = Vector2.new(cx0+10, fcy0+10)
+btn0Label.Color = Color3.new(0,1,0); btn0Label.Size = 12
+btn0Label.Visible = false; btn0Label.ZIndex = 4; btn0Label.Font = Drawing.Fonts.Monospace
 
 local btn1Label = Drawing.new("Text")
-btn1Label.Text = "Auto Farm Chest"; btn1Label.Position = Vector2.new(contentX+10, contentY+13)
-btn1Label.Color = Color3.new(1, 0.85, 0); btn1Label.Size = 13
+btn1Label.Text = "Auto Farm Chest"; btn1Label.Position = Vector2.new(cx0+10, fcy0+51)
+btn1Label.Color = Color3.new(1,0.85,0); btn1Label.Size = 12
 btn1Label.Visible = false; btn1Label.ZIndex = 4; btn1Label.Font = Drawing.Fonts.Monospace
 
 local btn2Label = Drawing.new("Text")
-btn2Label.Text = "Fruit ESP"; btn2Label.Position = Vector2.new(contentX+10, contentY+65)
-btn2Label.Color = Color3.new(0, 1, 0); btn2Label.Size = 13
+btn2Label.Text = "Fruit ESP"; btn2Label.Position = Vector2.new(cx0+10, fcy0+92)
+btn2Label.Color = Color3.new(0,1,0); btn2Label.Size = 12
 btn2Label.Visible = false; btn2Label.ZIndex = 4; btn2Label.Font = Drawing.Fonts.Monospace
 
 local btn3Label = Drawing.new("Text")
-btn3Label.Text = "Auto Farm Fruits"; btn3Label.Position = Vector2.new(contentX+10, contentY+117)
-btn3Label.Color = Color3.new(1, 0.85, 0); btn3Label.Size = 13
+btn3Label.Text = "Auto Farm Fruits"; btn3Label.Position = Vector2.new(cx0+10, fcy0+133)
+btn3Label.Color = Color3.new(1,0.85,0); btn3Label.Size = 12
 btn3Label.Visible = false; btn3Label.ZIndex = 4; btn3Label.Font = Drawing.Fonts.Monospace
 
 local btn4Label = Drawing.new("Text")
-btn4Label.Text = "Auto TP To Fruits"; btn4Label.Position = Vector2.new(contentX+10, contentY+169)
-btn4Label.Color = Color3.new(1, 0, 0); btn4Label.Size = 13
+btn4Label.Text = "Auto TP To Fruits"; btn4Label.Position = Vector2.new(cx0+10, fcy0+174)
+btn4Label.Color = Color3.new(1,0.3,0.3); btn4Label.Size = 12
 btn4Label.Visible = false; btn4Label.ZIndex = 4; btn4Label.Font = Drawing.Fonts.Monospace
 
-setVisible(btn1Parts, false); setVisible(toggle1Parts, false)
-setVisible(btn2Parts, false); setVisible(toggle2Parts, false)
-setVisible(btn3Parts, false); setVisible(toggle3Parts, false)
-setVisible(btn4Parts, false); setVisible(toggle4Parts, false)
+local speedTitleLabel = Drawing.new("Text")
+speedTitleLabel.Text = "Farm Speed:"; speedTitleLabel.Position = Vector2.new(cx0+10, fcy0+216)
+speedTitleLabel.Color = Color3.new(0.6,0.7,1); speedTitleLabel.Size = 12
+speedTitleLabel.Visible = false; speedTitleLabel.ZIndex = 4; speedTitleLabel.Font = Drawing.Fonts.Monospace
 
+local speedValueLabel = Drawing.new("Text")
+speedValueLabel.Text = tostring(FARM_SPEED)
+speedValueLabel.Position = Vector2.new(cx0+cw0-112, fcy0+216)
+speedValueLabel.Color = Color3.new(1,1,1); speedValueLabel.Size = 12
+speedValueLabel.Visible = false; speedValueLabel.ZIndex = 4
+speedValueLabel.Font = Drawing.Fonts.Monospace; speedValueLabel.Center = true
+
+local speedMinusLabel = Drawing.new("Text")
+speedMinusLabel.Text = "-"; speedMinusLabel.Position = Vector2.new(cx0+cw0-82+14, fcy0+216)
+speedMinusLabel.Color = Color3.new(1,0.4,0.4); speedMinusLabel.Size = 15
+speedMinusLabel.Visible = false; speedMinusLabel.ZIndex = 5
+speedMinusLabel.Font = Drawing.Fonts.Monospace; speedMinusLabel.Center = true
+
+local speedPlusLabel = Drawing.new("Text")
+speedPlusLabel.Text = "+"; speedPlusLabel.Position = Vector2.new(cx0+cw0-42+14, fcy0+216)
+speedPlusLabel.Color = Color3.new(0.4,1,0.4); speedPlusLabel.Size = 15
+speedPlusLabel.Visible = false; speedPlusLabel.ZIndex = 5
+speedPlusLabel.Font = Drawing.Fonts.Monospace; speedPlusLabel.Center = true
+
+setVisible(btn0Parts,false); setVisible(toggle0Parts,false)
+setVisible(btn1Parts,false); setVisible(toggle1Parts,false)
+setVisible(btn2Parts,false); setVisible(toggle2Parts,false)
+setVisible(btn3Parts,false); setVisible(toggle3Parts,false)
+setVisible(btn4Parts,false); setVisible(toggle4Parts,false)
+setVisible(btn5Parts,false); setVisible(speedMinusParts,false); setVisible(speedPlusParts,false)
+
+-- ─── showPage ─────────────────────────────────────────────────
 local function showPage(page)
     currentPage = page
     if page == "home" then
-        homeText.Visible = true
-        homeStatus.Visible = true
-        espInfoText.Visible = true
-        dotGreen.Visible = true; dotYellow.Visible = true; dotRed.Visible = true
-        setVisible(btn1Parts, false); setVisible(toggle1Parts, false)
-        setVisible(btn2Parts, false); setVisible(toggle2Parts, false)
-        setVisible(btn3Parts, false); setVisible(toggle3Parts, false)
-        setVisible(btn4Parts, false); setVisible(toggle4Parts, false)
-        btn1Label.Visible = false; btn2Label.Visible = false; btn3Label.Visible = false; btn4Label.Visible = false
-        homeLabel.Color = Color3.new(1,1,1); featuresLabel.Color = Color3.new(0.7,0.7,0.7)
-        moveRoundedRect(sideActiveMark, winX, winY+titleH)
+        setVisible(homeCard1,true); homeCard1Hdr.Visible=true; homeCard1Sep.Visible=true
+        homeStatusDot.Visible=true; homeWelcome1.Visible=true; homeWelcome2.Visible=true
+        setVisible(homeCard2,true); homeCard2Hdr.Visible=true; homeCard2Sep.Visible=true
+        homeEspText.Visible=true
+        setVisible(homeCard3,true); homeCard3Hdr.Visible=true; homeCard3Sep.Visible=true
+        dotGreen.Visible=true; detText1.Visible=true
+        dotYellow.Visible=true; detText2.Visible=true
+        dotRed.Visible=true; detText3.Visible=true
+        featTitle.Visible=false; featSep.Visible=false
+        setVisible(btn0Parts,false); setVisible(toggle0Parts,false)
+        setVisible(btn1Parts,false); setVisible(toggle1Parts,false)
+        setVisible(btn2Parts,false); setVisible(toggle2Parts,false)
+        setVisible(btn3Parts,false); setVisible(toggle3Parts,false)
+        setVisible(btn4Parts,false); setVisible(toggle4Parts,false)
+        setVisible(btn5Parts,false); setVisible(speedMinusParts,false); setVisible(speedPlusParts,false)
+        btn0Label.Visible=false; btn1Label.Visible=false; btn2Label.Visible=false
+        btn3Label.Visible=false; btn4Label.Visible=false
+        speedTitleLabel.Visible=false; speedValueLabel.Visible=false
+        speedMinusLabel.Visible=false; speedPlusLabel.Visible=false
+        moveRoundedRect(sideHighlight, winX, winY+titleH)
+        tab0BadgeText.Color=Color3.new(1,1,1); tab0LabelText.Color=Color3.new(1,1,1)
+        colorRoundedRect(tab0BadgeParts, Color3.new(0,0.35,0.18))
+        tab1BadgeText.Color=Color3.new(0.6,0.7,0.7); tab1LabelText.Color=Color3.new(0.6,0.7,0.7)
+        colorRoundedRect(tab1BadgeParts, Color3.new(0.15,0.18,0.19))
     else
-        homeText.Visible = false
-        homeStatus.Visible = false
-        espInfoText.Visible = false
-        dotGreen.Visible = false; dotYellow.Visible = false; dotRed.Visible = false
-        setVisible(btn1Parts, true); setVisible(toggle1Parts, true)
-        setVisible(btn2Parts, true); setVisible(toggle2Parts, true)
-        setVisible(btn3Parts, true); setVisible(toggle3Parts, true)
-        setVisible(btn4Parts, true); setVisible(toggle4Parts, true)
-        btn1Label.Visible = true; btn2Label.Visible = true; btn3Label.Visible = true; btn4Label.Visible = true
-        homeLabel.Color = Color3.new(0.7,0.7,0.7); featuresLabel.Color = Color3.new(1,1,1)
-        moveRoundedRect(sideActiveMark, winX, winY+titleH+32)
+        setVisible(homeCard1,false); homeCard1Hdr.Visible=false; homeCard1Sep.Visible=false
+        homeStatusDot.Visible=false; homeWelcome1.Visible=false; homeWelcome2.Visible=false
+        setVisible(homeCard2,false); homeCard2Hdr.Visible=false; homeCard2Sep.Visible=false
+        homeEspText.Visible=false
+        setVisible(homeCard3,false); homeCard3Hdr.Visible=false; homeCard3Sep.Visible=false
+        dotGreen.Visible=false; detText1.Visible=false
+        dotYellow.Visible=false; detText2.Visible=false
+        dotRed.Visible=false; detText3.Visible=false
+        featTitle.Visible=true; featSep.Visible=true
+        setVisible(btn0Parts,true); setVisible(toggle0Parts,true)
+        setVisible(btn1Parts,true); setVisible(toggle1Parts,true)
+        setVisible(btn2Parts,true); setVisible(toggle2Parts,true)
+        setVisible(btn3Parts,true); setVisible(toggle3Parts,true)
+        setVisible(btn4Parts,true); setVisible(toggle4Parts,true)
+        setVisible(btn5Parts,true); setVisible(speedMinusParts,true); setVisible(speedPlusParts,true)
+        btn0Label.Visible=true; btn1Label.Visible=true; btn2Label.Visible=true
+        btn3Label.Visible=true; btn4Label.Visible=true
+        speedTitleLabel.Visible=true; speedValueLabel.Visible=true
+        speedMinusLabel.Visible=true; speedPlusLabel.Visible=true
+        moveRoundedRect(sideHighlight, winX, winY+titleH+44)
+        tab0BadgeText.Color=Color3.new(0.6,0.7,0.7); tab0LabelText.Color=Color3.new(0.6,0.7,0.7)
+        colorRoundedRect(tab0BadgeParts, Color3.new(0.15,0.18,0.19))
+        tab1BadgeText.Color=Color3.new(1,1,1); tab1LabelText.Color=Color3.new(1,1,1)
+        colorRoundedRect(tab1BadgeParts, Color3.new(0,0.35,0.18))
     end
 end
 
 showPage("home")
 
+-- ─── updateAll ────────────────────────────────────────────────
 local function updateAll()
+    local cx  = winX+sideW+10
+    local cy  = winY+titleH+10
+    local cw  = winW-sideW-20
+    local fcy = cy+28
+
     moveRoundedRect(windowParts, winX, winY)
-    moveRoundedRect(titleBarParts, winX, winY)
-    moveRoundedRect(sidePanelParts, winX, winY+titleH)
-    titleText.Position    = Vector2.new(winX+sideW+10, winY+10)
-    homeLabel.Position    = Vector2.new(winX+sideW/2, winY+titleH+8)
-    featuresLabel.Position= Vector2.new(winX+sideW/2, winY+titleH+42)
-    homeText.Position     = Vector2.new(winX+sideW+15, winY+titleH+20)
-    espInfoText.Position  = Vector2.new(winX+sideW+15, winY+titleH+48)
-    homeStatus.Position   = Vector2.new(winX+sideW+25, winY+titleH+110)
-    dotGreen.Position  = Vector2.new(winX+sideW+20, winY+titleH+116)
-    dotYellow.Position = Vector2.new(winX+sideW+20, winY+titleH+132)
-    dotRed.Position    = Vector2.new(winX+sideW+20, winY+titleH+148)
-    local cx = winX+sideW+10; local cy = winY+titleH+10; local cw = winW-sideW-20
-    moveRoundedRect(btn1Parts, cx, cy); moveRoundedRect(toggle1Parts, cx+cw-42, cy+10)
-    moveRoundedRect(btn2Parts, cx, cy+52); moveRoundedRect(toggle2Parts, cx+cw-42, cy+62)
-    moveRoundedRect(btn3Parts, cx, cy+104); moveRoundedRect(toggle3Parts, cx+cw-42, cy+114)
-    moveRoundedRect(btn4Parts, cx, cy+156); moveRoundedRect(toggle4Parts, cx+cw-42, cy+166)
-    btn1Label.Position = Vector2.new(cx+10, cy+13); btn2Label.Position = Vector2.new(cx+10, cy+65)
-    btn3Label.Position = Vector2.new(cx+10, cy+117); btn4Label.Position = Vector2.new(cx+10, cy+169)
-    if currentPage == "home" then
-        moveRoundedRect(sideActiveMark, winX, winY+titleH)
+    moveRoundedRect(titleBgParts, winX, winY)
+    moveRoundedRect(sideParts, winX, winY+titleH)
+
+    accentLine.From=Vector2.new(winX,winY+titleH); accentLine.To=Vector2.new(winX+winW,winY+titleH)
+    sideLine.From=Vector2.new(winX+sideW,winY+titleH); sideLine.To=Vector2.new(winX+sideW,winY+winH)
+
+    titleText.Position=Vector2.new(winX+12,winY+7)
+    subtitleText.Position=Vector2.new(winX+12,winY+28)
+
+    if currentPage=="home" then
+        moveRoundedRect(sideHighlight,winX,winY+titleH)
     else
-        moveRoundedRect(sideActiveMark, winX, winY+titleH+32)
+        moveRoundedRect(sideHighlight,winX,winY+titleH+44)
     end
+
+    moveRoundedRect(tab0BadgeParts,winX+8,winY+titleH+12)
+    tab0BadgeText.Position=Vector2.new(winX+19,winY+titleH+14)
+    tab0LabelText.Position=Vector2.new(winX+36,winY+titleH+15)
+    moveRoundedRect(tab1BadgeParts,winX+8,winY+titleH+56)
+    tab1BadgeText.Position=Vector2.new(winX+19,winY+titleH+58)
+    tab1LabelText.Position=Vector2.new(winX+36,winY+titleH+59)
+
+    moveRoundedRect(homeCard1,cx,cy)
+    homeCard1Hdr.Position=Vector2.new(cx+10,cy+6)
+    homeCard1Sep.From=Vector2.new(cx+6,cy+20); homeCard1Sep.To=Vector2.new(cx+cw-6,cy+20)
+    homeStatusDot.Position=Vector2.new(cx+16,cy+38)
+    homeWelcome1.Position=Vector2.new(cx+28,cy+27)
+    homeWelcome2.Position=Vector2.new(cx+28,cy+44)
+
+    moveRoundedRect(homeCard2,cx,cy+72)
+    homeCard2Hdr.Position=Vector2.new(cx+10,cy+78)
+    homeCard2Sep.From=Vector2.new(cx+6,cy+92); homeCard2Sep.To=Vector2.new(cx+cw-6,cy+92)
+    homeEspText.Position=Vector2.new(cx+10,cy+97)
+
+    moveRoundedRect(homeCard3,cx,cy+152)
+    homeCard3Hdr.Position=Vector2.new(cx+10,cy+158)
+    homeCard3Sep.From=Vector2.new(cx+6,cy+172); homeCard3Sep.To=Vector2.new(cx+cw-6,cy+172)
+    dotGreen.Position=Vector2.new(cx+16,cy+185); detText1.Position=Vector2.new(cx+28,cy+179)
+    dotYellow.Position=Vector2.new(cx+16,cy+203); detText2.Position=Vector2.new(cx+28,cy+197)
+    dotRed.Position=Vector2.new(cx+16,cy+221); detText3.Position=Vector2.new(cx+28,cy+215)
+
+    featTitle.Position=Vector2.new(cx,cy)
+    featSep.From=Vector2.new(cx,cy+20); featSep.To=Vector2.new(cx+cw,cy+20)
+
+    moveRoundedRect(btn0Parts,cx,fcy);        moveRoundedRect(toggle0Parts,cx+cw-42,fcy+7)
+    moveRoundedRect(btn1Parts,cx,fcy+41);     moveRoundedRect(toggle1Parts,cx+cw-42,fcy+48)
+    moveRoundedRect(btn2Parts,cx,fcy+82);     moveRoundedRect(toggle2Parts,cx+cw-42,fcy+89)
+    moveRoundedRect(btn3Parts,cx,fcy+123);    moveRoundedRect(toggle3Parts,cx+cw-42,fcy+130)
+    moveRoundedRect(btn4Parts,cx,fcy+164);    moveRoundedRect(toggle4Parts,cx+cw-42,fcy+171)
+    moveRoundedRect(btn5Parts,cx,fcy+205)
+    moveRoundedRect(speedMinusParts,cx+cw-82,fcy+212)
+    moveRoundedRect(speedPlusParts,cx+cw-42,fcy+212)
+
+    btn0Label.Position=Vector2.new(cx+10,fcy+10)
+    btn1Label.Position=Vector2.new(cx+10,fcy+51)
+    btn2Label.Position=Vector2.new(cx+10,fcy+92)
+    btn3Label.Position=Vector2.new(cx+10,fcy+133)
+    btn4Label.Position=Vector2.new(cx+10,fcy+174)
+    speedTitleLabel.Position=Vector2.new(cx+10,fcy+216)
+    speedValueLabel.Position=Vector2.new(cx+cw-112,fcy+216)
+    speedMinusLabel.Position=Vector2.new(cx+cw-82+14,fcy+216)
+    speedPlusLabel.Position=Vector2.new(cx+cw-42+14,fcy+216)
 end
 
-local function isInsideTitleBar(x, y)  return x>=winX and x<=winX+winW and y>=winY and y<=winY+titleH end
-local function isInsideHome(x, y)      return x>=winX and x<=winX+sideW and y>=winY+titleH and y<=winY+titleH+32 end
-local function isInsideFeatures(x, y)  return x>=winX and x<=winX+sideW and y>=winY+titleH+32 and y<=winY+titleH+64 end
-local function isInsideToggle1(x, y)
-    local cx=winX+sideW+10; local cy=winY+titleH+10; local cw=winW-sideW-20
-    return x>=cx+cw-42 and x<=cx+cw-10 and y>=cy+10 and y<=cy+32
+-- ─── Hit detection ────────────────────────────────────────────
+local function isInsideTitleBar(x,y)
+    return x>=winX and x<=winX+winW and y>=winY and y<=winY+titleH
 end
-local function isInsideToggle2(x, y)
-    local cx=winX+sideW+10; local cy=winY+titleH+10; local cw=winW-sideW-20
-    return x>=cx+cw-42 and x<=cx+cw-10 and y>=cy+62 and y<=cy+84
+local function isInsideTab0(x,y)
+    return x>=winX and x<=winX+sideW and y>=winY+titleH and y<=winY+titleH+44
 end
-local function isInsideToggle3(x, y)
-    local cx=winX+sideW+10; local cy=winY+titleH+10; local cw=winW-sideW-20
-    return x>=cx+cw-42 and x<=cx+cw-10 and y>=cy+114 and y<=cy+136
+local function isInsideTab1(x,y)
+    return x>=winX and x<=winX+sideW and y>=winY+titleH+44 and y<=winY+titleH+88
 end
-local function isInsideToggle4(x, y)
-    local cx=winX+sideW+10; local cy=winY+titleH+10; local cw=winW-sideW-20
-    return x>=cx+cw-42 and x<=cx+cw-10 and y>=cy+166 and y<=cy+188
+local function isInsideToggle0(x,y)
+    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
+    return x>=cx+cw-42 and x<=cx+cw-10 and y>=fcy+7 and y<=fcy+28
+end
+local function isInsideToggle1(x,y)
+    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
+    return x>=cx+cw-42 and x<=cx+cw-10 and y>=fcy+48 and y<=fcy+69
+end
+local function isInsideToggle2(x,y)
+    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
+    return x>=cx+cw-42 and x<=cx+cw-10 and y>=fcy+89 and y<=fcy+110
+end
+local function isInsideToggle3(x,y)
+    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
+    return x>=cx+cw-42 and x<=cx+cw-10 and y>=fcy+130 and y<=fcy+151
+end
+local function isInsideToggle4(x,y)
+    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
+    return x>=cx+cw-42 and x<=cx+cw-10 and y>=fcy+171 and y<=fcy+192
+end
+local function isInsideSpeedMinus(x,y)
+    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
+    return x>=cx+cw-82 and x<=cx+cw-54 and y>=fcy+212 and y<=fcy+233
+end
+local function isInsideSpeedPlus(x,y)
+    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
+    return x>=cx+cw-42 and x<=cx+cw-14 and y>=fcy+212 and y<=fcy+233
 end
 
+-- ─── ESP / Cham helpers ───────────────────────────────────────
 local function clearEspLabels()
-    for _, entry in pairs(espLabels) do entry.label.Visible = false; entry.label:Remove() end
+    for _, entry in pairs(espLabels) do entry.label.Visible=false; entry.label:Remove() end
     espLabels = {}
 end
-
 local function clearChamBoxes()
     for _, entry in pairs(chamBoxes) do
-        for _, line in pairs(entry.lines) do line.Visible = false; line:Remove() end
+        for _, line in pairs(entry.lines) do line.Visible=false; line:Remove() end
     end
     chamBoxes = {}
 end
-
 local function buildChamBoxes()
     clearChamBoxes()
     for _, obj in pairs(game.Workspace:GetChildren()) do
@@ -285,8 +496,7 @@ local function buildChamBoxes()
                 local lines = {}
                 for i = 1, 4 do
                     local l = Drawing.new("Line")
-                    l.Color = Color3.new(1, 0.4, 0); l.Thickness = 2
-                    l.Visible = false; l.ZIndex = 9
+                    l.Color=Color3.new(1,0.4,0); l.Thickness=2; l.Visible=false; l.ZIndex=9
                     table.insert(lines, l)
                 end
                 table.insert(chamBoxes, {lines=lines, part=fruitPart})
@@ -294,7 +504,6 @@ local function buildChamBoxes()
         end
     end
 end
-
 local function buildEspLabels()
     clearEspLabels()
     for _, obj in pairs(game.Workspace:GetChildren()) do
@@ -304,49 +513,82 @@ local function buildEspLabels()
             if fruitPart and fruitPart:IsA("BasePart") then
                 local fruitName = (obj.Name ~= "Fruit" and obj.Name) or "Spawned Fruit"
                 local label = Drawing.new("Text")
-                label.Text = fruitName; label.Position = Vector2.new(0,0)
-                label.Color = Color3.new(0, 1, 0); label.Size = 14; label.Outline = true
-                label.Visible = false; label.ZIndex = 10; label.Font = Drawing.Fonts.Monospace; label.Center = true
+                label.Text=fruitName; label.Position=Vector2.new(0,0)
+                label.Color=Color3.new(0,1,0); label.Size=14; label.Outline=true
+                label.Visible=false; label.ZIndex=10; label.Font=Drawing.Fonts.Monospace; label.Center=true
                 table.insert(espLabels, {label=label, part=fruitPart})
             end
         end
     end
 end
 
--- ─── Smooth tween (os.clock, frame-perfect) ──────────────────
-local CHEST_SPEED = 310  -- studs per second for chest farming
-local FRUIT_SPEED = 210  -- studs per second for fruit farming
+-- ─── Movement helpers ─────────────────────────────────────────
+local CHEST_SPEED = 310
+local FRUIT_SPEED = 210
 
 local function tweenTo(hrp, targetPos, speed, checkFn)
     local startPos = hrp.Position
-    local dx = targetPos.X - startPos.X
-    local dy = targetPos.Y - startPos.Y
-    local dz = targetPos.Z - startPos.Z
-    local distance = math.sqrt(dx*dx + dy*dy + dz*dz)
+    local dx=targetPos.X-startPos.X; local dy=targetPos.Y-startPos.Y; local dz=targetPos.Z-startPos.Z
+    local distance = math.sqrt(dx*dx+dy*dy+dz*dz)
     if distance < 0.1 then return end
-    local duration = distance / speed
-    local startTime = os.clock()
+    local duration = distance/speed; local startTime = os.clock()
     while true do
         if not checkFn() then return end
-        local elapsed = os.clock() - startTime
-        local alpha = math.min(elapsed / duration, 1)
-        hrp.Position = Vector3.new(
-            startPos.X + dx * alpha,
-            startPos.Y + dy * alpha,
-            startPos.Z + dz * alpha
-        )
-        hrp.Velocity = Vector3.new(0, 0, 0)
-        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        local elapsed = os.clock()-startTime
+        local alpha = math.min(elapsed/duration, 1)
+        hrp.Position = Vector3.new(startPos.X+dx*alpha, startPos.Y+dy*alpha, startPos.Z+dz*alpha)
+        hrp.Velocity = Vector3.new(0,0,0); hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
         if alpha >= 1 then break end
         task.wait()
     end
 end
 
+local function farmTweenTo(hrp, targetPos)
+    local startPos = hrp.Position
+    local dx=targetPos.X-startPos.X; local dy=targetPos.Y-startPos.Y; local dz=targetPos.Z-startPos.Z
+    local distance = math.sqrt(dx*dx+dy*dy+dz*dz)
+    if distance < 0.5 then return end
+    local duration = distance/FARM_SPEED; local startTime = os.clock()
+    while true do
+        if not autoFarmNearest then return end
+        local elapsed = os.clock()-startTime
+        local alpha = math.min(elapsed/duration, 1)
+        hrp.Position = Vector3.new(startPos.X+dx*alpha, startPos.Y+dy*alpha, startPos.Z+dz*alpha)
+        hrp.Velocity = Vector3.new(0,0,0); hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+        if alpha >= 1 then break end
+        task.wait()
+    end
+end
+
+local function isAlive(model)
+    if not model or not model.Parent then return false end
+    local hum = model:FindFirstChildOfClass("Humanoid")
+    if hum and hum.Health <= 0 then return false end
+    return true
+end
+
+local function getNearestEnemy(hrp)
+    local folder = game.Workspace:FindFirstChild("Enemies")
+    if not folder then return nil end
+    local best, bestDist = nil, math.huge
+    for _, model in pairs(folder:GetChildren()) do
+        if model:IsA("Model") and isAlive(model) then
+            local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildOfClass("BasePart")
+            if root then
+                local dx=root.Position.X-hrp.Position.X; local dy=root.Position.Y-hrp.Position.Y; local dz=root.Position.Z-hrp.Position.Z
+                local dist=math.sqrt(dx*dx+dy*dy+dz*dz)
+                if dist < bestDist then bestDist=dist; best=model end
+            end
+        end
+    end
+    return best
+end
+
+-- ─── Game loops ───────────────────────────────────────────────
 local function teleportToChest(targetPart)
     local Character = LocalPlayer.Character; if not Character then return end
     local hrp = Character:FindFirstChild("HumanoidRootPart"); if not hrp then return end
-    local targetPos = Vector3.new(targetPart.Position.X, targetPart.Position.Y + 3, targetPart.Position.Z)
-    tweenTo(hrp, targetPos, CHEST_SPEED, function() return autoFarming end)
+    tweenTo(hrp, Vector3.new(targetPart.Position.X, targetPart.Position.Y+3, targetPart.Position.Z), CHEST_SPEED, function() return autoFarming end)
 end
 
 task.spawn(function()
@@ -356,14 +598,12 @@ task.spawn(function()
             if ChestModels then
                 local children = ChestModels:GetChildren()
                 if #children > 0 then
-                    if chestIndex > #children then chestIndex = 1 end
+                    if chestIndex > #children then chestIndex=1 end
                     local model = children[chestIndex]
                     if model then
-                        local targetPart = model:FindFirstChild("RootPart")
-                        if targetPart then
-                            notify("Going to chest "..chestIndex.."/"..#children, "Myth4c's Script", 2)
-                            teleportToChest(targetPart); chestIndex = chestIndex + 1
-                        else chestIndex = chestIndex + 1 end
+                        local tp = model:FindFirstChild("RootPart")
+                        if tp then notify("Going to chest "..chestIndex.."/"..#children,"Myth4c's Script",2); teleportToChest(tp); chestIndex=chestIndex+1
+                        else chestIndex=chestIndex+1 end
                     end
                 end
             end
@@ -380,22 +620,19 @@ task.spawn(function()
             if hrp then
                 local bestPart, bestDist = nil, math.huge
                 for _, obj in pairs(game.Workspace:GetChildren()) do
-                    local fruitFolder = obj:FindFirstChild("Fruit")
-                    if fruitFolder then
-                        local fruitPart = fruitFolder:FindFirstChild("Fruit")
-                        if fruitPart and fruitPart:IsA("BasePart") then
-                            local dx = fruitPart.Position.X - hrp.Position.X
-                            local dy = fruitPart.Position.Y - hrp.Position.Y
-                            local dz = fruitPart.Position.Z - hrp.Position.Z
-                            local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
-                            if dist < bestDist then bestDist = dist; bestPart = fruitPart end
+                    local ff = obj:FindFirstChild("Fruit")
+                    if ff then
+                        local fp = ff:FindFirstChild("Fruit")
+                        if fp and fp:IsA("BasePart") then
+                            local dx=fp.Position.X-hrp.Position.X; local dy=fp.Position.Y-hrp.Position.Y; local dz=fp.Position.Z-hrp.Position.Z
+                            local dist=math.sqrt(dx*dx+dy*dy+dz*dz)
+                            if dist < bestDist then bestDist=dist; bestPart=fp end
                         end
                     end
                 end
                 if bestPart then
-                    notify("Farming fruit...", "Myth4c's Script", 1)
-                    local targetPos = Vector3.new(bestPart.Position.X, bestPart.Position.Y + 3, bestPart.Position.Z)
-                    tweenTo(hrp, targetPos, FRUIT_SPEED, function() return autoFruits end)
+                    notify("Farming fruit...","Myth4c's Script",1)
+                    tweenTo(hrp, Vector3.new(bestPart.Position.X,bestPart.Position.Y+3,bestPart.Position.Z), FRUIT_SPEED, function() return autoFruits end)
                 end
             end
             task.wait(1)
@@ -403,7 +640,46 @@ task.spawn(function()
     end
 end)
 
--- ─── TP to Fruit loop (instant teleport) ─────────────────────
+task.spawn(function()
+    while true do
+        if autoFarmNearest then
+            local Character = LocalPlayer.Character
+            local hrp = Character and Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local target = getNearestEnemy(hrp)
+                if target then
+                    local root = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChildOfClass("BasePart")
+                    if root then
+                        local dx=root.Position.X-hrp.Position.X; local dy=root.Position.Y-hrp.Position.Y; local dz=root.Position.Z-hrp.Position.Z
+                        local dist=math.sqrt(dx*dx+dy*dy+dz*dz)
+                        if dist <= 1000 then
+                            notify("Found: "..target.Name,"Myth4c's Script",2)
+                            if dist > 10 then farmTweenTo(hrp, Vector3.new(root.Position.X,root.Position.Y+2,root.Position.Z+8)) end
+                            local clickTimer=0
+                            while autoFarmNearest and isAlive(target) do
+                                local r2 = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChildOfClass("BasePart")
+                                if r2 then
+                                    local tx=r2.Position.X; local ty=r2.Position.Y+2; local tz=r2.Position.Z+8
+                                    hrp.Position=Vector3.new(tx,ty,tz); hrp.Velocity=Vector3.new(0,0,0); hrp.AssemblyLinearVelocity=Vector3.new(0,0,0)
+                                    local ndx=r2.Position.X-hrp.Position.X; local ndz=r2.Position.Z-hrp.Position.Z
+                                    local nlen=math.sqrt(ndx*ndx+ndz*ndz)
+                                    if nlen > 0 then
+                                        hrp.Position=Vector3.new(tx+(ndx/nlen)*1,ty,tz+(ndz/nlen)*1)
+                                        hrp.Velocity=Vector3.new(0,0,0); hrp.AssemblyLinearVelocity=Vector3.new(0,0,0)
+                                    end
+                                end
+                                clickTimer=clickTimer+1; if clickTimer>=12 then mouse1click(); clickTimer=0 end
+                                task.wait()
+                            end
+                        end
+                    end
+                end
+            end
+            task.wait(0.1)
+        else task.wait(0.1) end
+    end
+end)
+
 task.spawn(function()
     while true do
         if autoTpFruit then
@@ -412,22 +688,19 @@ task.spawn(function()
             if hrp then
                 local bestPart, bestDist = nil, math.huge
                 for _, obj in pairs(game.Workspace:GetChildren()) do
-                    local fruitFolder = obj:FindFirstChild("Fruit")
-                    if fruitFolder then
-                        local fruitPart = fruitFolder:FindFirstChild("Fruit")
-                        if fruitPart and fruitPart:IsA("BasePart") then
-                            local dx = fruitPart.Position.X - hrp.Position.X
-                            local dy = fruitPart.Position.Y - hrp.Position.Y
-                            local dz = fruitPart.Position.Z - hrp.Position.Z
-                            local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
-                            if dist < bestDist then bestDist = dist; bestPart = fruitPart end
+                    local ff=obj:FindFirstChild("Fruit")
+                    if ff then
+                        local fp=ff:FindFirstChild("Fruit")
+                        if fp and fp:IsA("BasePart") then
+                            local dx=fp.Position.X-hrp.Position.X; local dy=fp.Position.Y-hrp.Position.Y; local dz=fp.Position.Z-hrp.Position.Z
+                            local dist=math.sqrt(dx*dx+dy*dy+dz*dz)
+                            if dist < bestDist then bestDist=dist; bestPart=fp end
                         end
                     end
                 end
                 if bestPart then
-                    hrp.Position = Vector3.new(bestPart.Position.X, bestPart.Position.Y + 3, bestPart.Position.Z)
-                    hrp.Velocity = Vector3.new(0, 0, 0)
-                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    hrp.Position=Vector3.new(bestPart.Position.X,bestPart.Position.Y+3,bestPart.Position.Z)
+                    hrp.Velocity=Vector3.new(0,0,0); hrp.AssemblyLinearVelocity=Vector3.new(0,0,0)
                 end
             end
             task.wait(0.1)
@@ -444,7 +717,7 @@ task.spawn(function()
                 if entry and entry.label and entry.part and HumanoidRootPart then
                     local screenPos, onScreen = WorldToScreen(entry.part.Position)
                     entry.label.Visible = onScreen
-                    if onScreen then entry.label.Position = Vector2.new(screenPos.X, screenPos.Y-20) end
+                    if onScreen then entry.label.Position=Vector2.new(screenPos.X,screenPos.Y-20) end
                 end
             end
         end
@@ -463,45 +736,28 @@ task.spawn(function()
             local hrp = Character and Character:FindFirstChild("HumanoidRootPart")
             for _, entry in pairs(chamBoxes) do
                 if entry and entry.part and hrp then
-                    local pos = entry.part.Position
-                    local sz  = entry.part.Size * 0.5
-                    local dx = pos.X - hrp.Position.X
-                    local dy = pos.Y - hrp.Position.Y
-                    local dz = pos.Z - hrp.Position.Z
-                    local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
-                    if dist < 100000000 then
-                        local corners = {
-                            Vector3.new(pos.X-sz.X, pos.Y-sz.Y, pos.Z-sz.Z),
-                            Vector3.new(pos.X+sz.X, pos.Y-sz.Y, pos.Z-sz.Z),
-                            Vector3.new(pos.X-sz.X, pos.Y+sz.Y, pos.Z-sz.Z),
-                            Vector3.new(pos.X+sz.X, pos.Y+sz.Y, pos.Z-sz.Z),
-                            Vector3.new(pos.X-sz.X, pos.Y-sz.Y, pos.Z+sz.Z),
-                            Vector3.new(pos.X+sz.X, pos.Y-sz.Y, pos.Z+sz.Z),
-                            Vector3.new(pos.X-sz.X, pos.Y+sz.Y, pos.Z+sz.Z),
-                            Vector3.new(pos.X+sz.X, pos.Y+sz.Y, pos.Z+sz.Z),
-                        }
-                        local minX, minY, maxX, maxY = math.huge, math.huge, -math.huge, -math.huge
-                        local allOnScreen = true
-                        for _, c in pairs(corners) do
-                            local sp, on = WorldToScreen(c)
-                            if not on then allOnScreen = false end
-                            if sp.X < minX then minX = sp.X end
-                            if sp.Y < minY then minY = sp.Y end
-                            if sp.X > maxX then maxX = sp.X end
-                            if sp.Y > maxY then maxY = sp.Y end
-                        end
-                        if allOnScreen then
-                            entry.lines[1].From = Vector2.new(minX, minY); entry.lines[1].To = Vector2.new(maxX, minY)
-                            entry.lines[2].From = Vector2.new(minX, maxY); entry.lines[2].To = Vector2.new(maxX, maxY)
-                            entry.lines[3].From = Vector2.new(minX, minY); entry.lines[3].To = Vector2.new(minX, maxY)
-                            entry.lines[4].From = Vector2.new(maxX, minY); entry.lines[4].To = Vector2.new(maxX, maxY)
-                            for _, l in pairs(entry.lines) do l.Visible = true end
-                        else
-                            for _, l in pairs(entry.lines) do l.Visible = false end
-                        end
-                    else
-                        for _, l in pairs(entry.lines) do l.Visible = false end
+                    local pos=entry.part.Position; local sz=entry.part.Size*0.5
+                    local corners = {
+                        Vector3.new(pos.X-sz.X,pos.Y-sz.Y,pos.Z-sz.Z), Vector3.new(pos.X+sz.X,pos.Y-sz.Y,pos.Z-sz.Z),
+                        Vector3.new(pos.X-sz.X,pos.Y+sz.Y,pos.Z-sz.Z), Vector3.new(pos.X+sz.X,pos.Y+sz.Y,pos.Z-sz.Z),
+                        Vector3.new(pos.X-sz.X,pos.Y-sz.Y,pos.Z+sz.Z), Vector3.new(pos.X+sz.X,pos.Y-sz.Y,pos.Z+sz.Z),
+                        Vector3.new(pos.X-sz.X,pos.Y+sz.Y,pos.Z+sz.Z), Vector3.new(pos.X+sz.X,pos.Y+sz.Y,pos.Z+sz.Z),
+                    }
+                    local minX,minY,maxX,maxY = math.huge,math.huge,-math.huge,-math.huge
+                    local allOnScreen = true
+                    for _, c in pairs(corners) do
+                        local sp,on = WorldToScreen(c)
+                        if not on then allOnScreen=false end
+                        if sp.X<minX then minX=sp.X end; if sp.Y<minY then minY=sp.Y end
+                        if sp.X>maxX then maxX=sp.X end; if sp.Y>maxY then maxY=sp.Y end
                     end
+                    if allOnScreen then
+                        entry.lines[1].From=Vector2.new(minX,minY); entry.lines[1].To=Vector2.new(maxX,minY)
+                        entry.lines[2].From=Vector2.new(minX,maxY); entry.lines[2].To=Vector2.new(maxX,maxY)
+                        entry.lines[3].From=Vector2.new(minX,minY); entry.lines[3].To=Vector2.new(minX,maxY)
+                        entry.lines[4].From=Vector2.new(maxX,minY); entry.lines[4].To=Vector2.new(maxX,maxY)
+                        for _, l in pairs(entry.lines) do l.Visible=true end
+                    else for _, l in pairs(entry.lines) do l.Visible=false end end
                 end
             end
         end
@@ -509,56 +765,54 @@ task.spawn(function()
     end
 end)
 
+-- ─── Input loop ───────────────────────────────────────────────
 task.spawn(function()
-    local dragging = false; local dragOffX, dragOffY = 0, 0; local wasPressed = false
+    local dragging=false; local dragOffX,dragOffY=0,0; local wasPressed=false
     while true do
-        local mouse = LocalPlayer:GetMouse(); local mx, my = mouse.X, mouse.Y
-        local pressing = ismouse1pressed()
+        local mouse=LocalPlayer:GetMouse(); local mx,my=mouse.X,mouse.Y
+        local pressing=ismouse1pressed()
         if pressing and not wasPressed then
-            if isInsideTitleBar(mx, my) then
-                dragging = true; dragOffX = mx-winX; dragOffY = my-winY
-            elseif isInsideHome(mx, my) then showPage("home")
-            elseif isInsideFeatures(mx, my) then showPage("features")
-            elseif currentPage == "features" then
-                if isInsideToggle1(mx, my) then
-                    autoFarming = not autoFarming
-                    if autoFarming then chestIndex=1; colorRoundedRect(toggle1Parts, toggleOnColor); notify("Auto Farm Started!", "Myth4c's Script", 2)
-                    else colorRoundedRect(toggle1Parts, toggleOffColor); notify("Auto Farm Stopped!", "Myth4c's Script", 2) end
-                elseif isInsideToggle2(mx, my) then
-                    fruitEsp = not fruitEsp
-                    chamEsp = fruitEsp
-                    if fruitEsp then
-                        buildEspLabels(); buildChamBoxes()
-                        colorRoundedRect(toggle2Parts, toggleOnColor)
-                        notify("Fruit ESP On!", "Myth4c's Script", 2)
-                    else
-                        colorRoundedRect(toggle2Parts, toggleOffColor)
-                        clearEspLabels(); clearChamBoxes()
-                        notify("Fruit ESP Off!", "Myth4c's Script", 2)
+            if isInsideTitleBar(mx,my) then
+                dragging=true; dragOffX=mx-winX; dragOffY=my-winY
+            elseif isInsideTab0(mx,my) then showPage("home")
+            elseif isInsideTab1(mx,my) then showPage("features")
+            elseif currentPage=="features" then
+                if isInsideToggle0(mx,my) then
+                    autoFarmNearest=not autoFarmNearest
+                    colorRoundedRect(toggle0Parts, autoFarmNearest and toggleOnColor or toggleOffColor)
+                    notify(autoFarmNearest and "Auto Farm Nearest ON!" or "Auto Farm Nearest OFF!","Myth4c's Script",2)
+                elseif isInsideToggle1(mx,my) then
+                    autoFarming=not autoFarming; if autoFarming then chestIndex=1 end
+                    colorRoundedRect(toggle1Parts, autoFarming and toggleOnColor or toggleOffColor)
+                    notify(autoFarming and "Auto Farm Started!" or "Auto Farm Stopped!","Myth4c's Script",2)
+                elseif isInsideToggle2(mx,my) then
+                    fruitEsp=not fruitEsp; chamEsp=fruitEsp
+                    if fruitEsp then buildEspLabels(); buildChamBoxes() else clearEspLabels(); clearChamBoxes() end
+                    colorRoundedRect(toggle2Parts, fruitEsp and toggleOnColor or toggleOffColor)
+                    notify(fruitEsp and "Fruit ESP On!" or "Fruit ESP Off!","Myth4c's Script",2)
+                elseif isInsideToggle3(mx,my) then
+                    autoFruits=not autoFruits
+                    colorRoundedRect(toggle3Parts, autoFruits and toggleOnColor or toggleOffColor)
+                    notify(autoFruits and "Auto Farm Fruits Started!" or "Auto Farm Fruits Stopped!","Myth4c's Script",2)
+                elseif isInsideToggle4(mx,my) then
+                    autoTpFruit=not autoTpFruit
+                    colorRoundedRect(toggle4Parts, autoTpFruit and toggleOnColor or toggleOffColor)
+                    notify(autoTpFruit and "TP to Fruit ON!" or "TP to Fruit OFF!","Myth4c's Script",2)
+                elseif isInsideSpeedMinus(mx,my) then
+                    if FARM_SPEED > MIN_SPEED then
+                        FARM_SPEED=FARM_SPEED-SPEED_STEP; speedValueLabel.Text=tostring(FARM_SPEED)
+                        notify("Farm Speed: "..FARM_SPEED,"Myth4c's Script",1)
                     end
-                elseif isInsideToggle3(mx, my) then
-                    autoFruits = not autoFruits
-                    if autoFruits then
-                        colorRoundedRect(toggle3Parts, toggleOnColor)
-                        notify("Auto Farm Fruits Started!", "Myth4c's Script", 2)
-                    else
-                        colorRoundedRect(toggle3Parts, toggleOffColor)
-                        notify("Auto Farm Fruits Stopped!", "Myth4c's Script", 2)
-                    end
-                elseif isInsideToggle4(mx, my) then
-                    autoTpFruit = not autoTpFruit
-                    if autoTpFruit then
-                        colorRoundedRect(toggle4Parts, toggleOnColor)
-                        notify("TP to Fruit ON!", "Myth4c's Script", 2)
-                    else
-                        colorRoundedRect(toggle4Parts, toggleOffColor)
-                        notify("TP to Fruit OFF!", "Myth4c's Script", 2)
+                elseif isInsideSpeedPlus(mx,my) then
+                    if FARM_SPEED < MAX_SPEED then
+                        FARM_SPEED=FARM_SPEED+SPEED_STEP; speedValueLabel.Text=tostring(FARM_SPEED)
+                        notify("Farm Speed: "..FARM_SPEED,"Myth4c's Script",1)
                     end
                 end
             end
         end
-        if not pressing then dragging = false end
+        if not pressing then dragging=false end
         if dragging and pressing then winX=mx-dragOffX; winY=my-dragOffY; updateAll() end
-        wasPressed = pressing; task.wait(0.01)
+        wasPressed=pressing; task.wait(0.01)
     end
 end)
