@@ -1,5 +1,5 @@
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer or Players:WaitForChild("LocalPlayer")
 
 local winX, winY = 80, 80
 local winW, winH = 480, 365
@@ -138,22 +138,22 @@ local sideHighlight = makeRoundedRect(winX, winY+titleH, sideW, 44, 0, sideActiv
 -- ─── Sidebar Tab 0: Home ──────────────────────────────────────
 local tab0BadgeParts = makeRoundedRect(winX+8, winY+titleH+12, 22, 20, 3, Color3.new(0,0.35,0.18), 4)
 local tab0BadgeText  = Drawing.new("Text")
-tab0BadgeText.Text = "H"; tab0BadgeText.Position = Vector2.new(winX+19, winY+titleH+14)
+tab0BadgeText.Text = "H"; tab0BadgeText.Position = Vector2.new(winX+19, winY+titleH+21)
 tab0BadgeText.Color = Color3.new(1,1,1); tab0BadgeText.Size = 12; tab0BadgeText.Center = true
 tab0BadgeText.Visible = true; tab0BadgeText.ZIndex = 5; tab0BadgeText.Font = Drawing.Fonts.Monospace
 local tab0LabelText = Drawing.new("Text")
-tab0LabelText.Text = "Home"; tab0LabelText.Position = Vector2.new(winX+36, winY+titleH+15)
+tab0LabelText.Text = "Home"; tab0LabelText.Position = Vector2.new(winX+36, winY+titleH+21)
 tab0LabelText.Color = Color3.new(1,1,1); tab0LabelText.Size = 13
 tab0LabelText.Visible = true; tab0LabelText.ZIndex = 5; tab0LabelText.Font = Drawing.Fonts.Monospace
 
 -- ─── Sidebar Tab 1: Features ──────────────────────────────────
 local tab1BadgeParts = makeRoundedRect(winX+8, winY+titleH+56, 22, 20, 3, Color3.new(0.15,0.18,0.19), 4)
 local tab1BadgeText  = Drawing.new("Text")
-tab1BadgeText.Text = "F"; tab1BadgeText.Position = Vector2.new(winX+19, winY+titleH+58)
+tab1BadgeText.Text = "F"; tab1BadgeText.Position = Vector2.new(winX+19, winY+titleH+65)
 tab1BadgeText.Color = Color3.new(0.6,0.7,0.7); tab1BadgeText.Size = 12; tab1BadgeText.Center = true
 tab1BadgeText.Visible = true; tab1BadgeText.ZIndex = 5; tab1BadgeText.Font = Drawing.Fonts.Monospace
 local tab1LabelText = Drawing.new("Text")
-tab1LabelText.Text = "Features"; tab1LabelText.Position = Vector2.new(winX+36, winY+titleH+59)
+tab1LabelText.Text = "Features"; tab1LabelText.Position = Vector2.new(winX+36, winY+titleH+65)
 tab1LabelText.Color = Color3.new(0.6,0.7,0.7); tab1LabelText.Size = 13
 tab1LabelText.Visible = true; tab1LabelText.ZIndex = 5; tab1LabelText.Font = Drawing.Fonts.Monospace
 
@@ -179,7 +179,7 @@ homeWelcome1.Text = "Welcome!"; homeWelcome1.Position = Vector2.new(cx0+28, cy0+
 homeWelcome1.Color = Color3.new(1,1,1); homeWelcome1.Size = 14
 homeWelcome1.Visible = true; homeWelcome1.ZIndex = 4; homeWelcome1.Font = Drawing.Fonts.Monospace
 local homeWelcome2 = Drawing.new("Text")
-homeWelcome2.Text = "Made by Myth4c"; homeWelcome2.Position = Vector2.new(cx0+28, cy0+44)
+homeWelcome2.Text = "Made by Myth4c, Inspiration for Ui @lito2w"; homeWelcome2.Position = Vector2.new(cx0+28, cy0+44)
 homeWelcome2.Color = accentColor; homeWelcome2.Size = 12
 homeWelcome2.Visible = true; homeWelcome2.ZIndex = 4; homeWelcome2.Font = Drawing.Fonts.Monospace
 
@@ -236,66 +236,71 @@ featTitle.Visible = false; featTitle.ZIndex = 4; featTitle.Font = Drawing.Fonts.
 local featSep = makeLine(cx0, cy0+20, cx0+cw0, cy0+20, sepColor, 1, 3)
 featSep.Visible = false
 
-local btn0Parts    = makeRoundedRect(cx0, fcy0,       cw0, 35, 5, btnColor, 2)
-local toggle0Parts = makeRoundedRect(cx0+cw0-42, fcy0+7, 32, 21, 5, toggleOffColor, 3)
-local btn1Parts    = makeRoundedRect(cx0, fcy0+41,    cw0, 35, 5, btnColor, 2)
-local toggle1Parts = makeRoundedRect(cx0+cw0-42, fcy0+48, 32, 21, 5, toggleOffColor, 3)
-local btn2Parts    = makeRoundedRect(cx0, fcy0+82,    cw0, 35, 5, btnColor, 2)
-local toggle2Parts = makeRoundedRect(cx0+cw0-42, fcy0+89, 32, 21, 5, toggleOffColor, 3)
-local btn3Parts    = makeRoundedRect(cx0, fcy0+123,   cw0, 35, 5, btnColor, 2)
-local toggle3Parts = makeRoundedRect(cx0+cw0-42, fcy0+130, 32, 21, 5, toggleOffColor, 3)
-local btn4Parts    = makeRoundedRect(cx0, fcy0+164,   cw0, 35, 5, btnColor, 2)
-local toggle4Parts = makeRoundedRect(cx0+cw0-42, fcy0+171, 32, 21, 5, toggleOffColor, 3)
-local btn5Parts    = makeRoundedRect(cx0, fcy0+205,   cw0, 35, 5, btnColor, 2)
-local speedMinusParts = makeRoundedRect(cx0+cw0-82, fcy0+212, 28, 21, 5, speedBtnColor, 3)
-local speedPlusParts  = makeRoundedRect(cx0+cw0-42, fcy0+212, 28, 21, 5, speedBtnColor, 3)
+local btn0Parts    = makeRoundedRect(cx0, fcy0,       cw0, 28, 4, btnColor, 2)
+local toggle0Parts = makeRoundedRect(cx0+8, fcy0+6, 16, 16, 3, toggleOffColor, 3)
+local btn1Parts    = makeRoundedRect(cx0, fcy0+34,    cw0, 28, 4, btnColor, 2)
+local toggle1Parts = makeRoundedRect(cx0+8, fcy0+40, 16, 16, 3, toggleOffColor, 3)
+local btn2Parts    = makeRoundedRect(cx0, fcy0+68,    cw0, 28, 4, btnColor, 2)
+local toggle2Parts = makeRoundedRect(cx0+8, fcy0+74, 16, 16, 3, toggleOffColor, 3)
+local btn3Parts    = makeRoundedRect(cx0, fcy0+102,   cw0, 28, 4, btnColor, 2)
+local toggle3Parts = makeRoundedRect(cx0+8, fcy0+108, 16, 16, 3, toggleOffColor, 3)
+local btn4Parts    = makeRoundedRect(cx0, fcy0+136,   cw0, 28, 4, btnColor, 2)
+local toggle4Parts = makeRoundedRect(cx0+8, fcy0+142, 16, 16, 3, toggleOffColor, 3)
+local btn5Parts    = makeRoundedRect(cx0, fcy0+170,   cw0, 28, 4, btnColor, 2)
+local speedMinusParts = makeRoundedRect(cx0+cw0-64, fcy0+176, 24, 16, 3, speedBtnColor, 3)
+local speedPlusParts  = makeRoundedRect(cx0+cw0-34, fcy0+176, 24, 16, 3, speedBtnColor, 3)
 
 local btn0Label = Drawing.new("Text")
-btn0Label.Text = "Auto Farm Nearest"; btn0Label.Position = Vector2.new(cx0+10, fcy0+10)
+btn0Label.Text = "Auto Farm Nearest"; btn0Label.Position = Vector2.new(cx0+32, fcy0+8)
 btn0Label.Color = Color3.new(0,1,0); btn0Label.Size = 12
 btn0Label.Visible = false; btn0Label.ZIndex = 4; btn0Label.Font = Drawing.Fonts.Monospace
 
+
 local btn1Label = Drawing.new("Text")
-btn1Label.Text = "Auto Farm Chest"; btn1Label.Position = Vector2.new(cx0+10, fcy0+51)
+btn1Label.Text = "Auto Farm Chest"; btn1Label.Position = Vector2.new(cx0+32, fcy0+42)
 btn1Label.Color = Color3.new(1,0.85,0); btn1Label.Size = 12
 btn1Label.Visible = false; btn1Label.ZIndex = 4; btn1Label.Font = Drawing.Fonts.Monospace
 
+
 local btn2Label = Drawing.new("Text")
-btn2Label.Text = "Fruit ESP"; btn2Label.Position = Vector2.new(cx0+10, fcy0+92)
+btn2Label.Text = "Fruit ESP"; btn2Label.Position = Vector2.new(cx0+32, fcy0+76)
 btn2Label.Color = Color3.new(0,1,0); btn2Label.Size = 12
 btn2Label.Visible = false; btn2Label.ZIndex = 4; btn2Label.Font = Drawing.Fonts.Monospace
 
+
 local btn3Label = Drawing.new("Text")
-btn3Label.Text = "Auto Farm Fruits"; btn3Label.Position = Vector2.new(cx0+10, fcy0+133)
+btn3Label.Text = "Auto Farm Fruits"; btn3Label.Position = Vector2.new(cx0+32, fcy0+110)
 btn3Label.Color = Color3.new(1,0.85,0); btn3Label.Size = 12
 btn3Label.Visible = false; btn3Label.ZIndex = 4; btn3Label.Font = Drawing.Fonts.Monospace
 
+
 local btn4Label = Drawing.new("Text")
-btn4Label.Text = "Auto TP To Fruits"; btn4Label.Position = Vector2.new(cx0+10, fcy0+174)
+btn4Label.Text = "Auto TP To Fruits"; btn4Label.Position = Vector2.new(cx0+32, fcy0+144)
 btn4Label.Color = Color3.new(1,0.3,0.3); btn4Label.Size = 12
 btn4Label.Visible = false; btn4Label.ZIndex = 4; btn4Label.Font = Drawing.Fonts.Monospace
 
+
 local speedTitleLabel = Drawing.new("Text")
-speedTitleLabel.Text = "Farm Speed:"; speedTitleLabel.Position = Vector2.new(cx0+10, fcy0+216)
+speedTitleLabel.Text = "Farm Speed:"; speedTitleLabel.Position = Vector2.new(cx0+10, fcy0+178)
 speedTitleLabel.Color = Color3.new(0.6,0.7,1); speedTitleLabel.Size = 12
 speedTitleLabel.Visible = false; speedTitleLabel.ZIndex = 4; speedTitleLabel.Font = Drawing.Fonts.Monospace
 
 local speedValueLabel = Drawing.new("Text")
 speedValueLabel.Text = tostring(FARM_SPEED)
-speedValueLabel.Position = Vector2.new(cx0+cw0-112, fcy0+216)
+speedValueLabel.Position = Vector2.new(cx0+cw0-90, fcy0+178)
 speedValueLabel.Color = Color3.new(1,1,1); speedValueLabel.Size = 12
 speedValueLabel.Visible = false; speedValueLabel.ZIndex = 4
 speedValueLabel.Font = Drawing.Fonts.Monospace; speedValueLabel.Center = true
 
 local speedMinusLabel = Drawing.new("Text")
-speedMinusLabel.Text = "-"; speedMinusLabel.Position = Vector2.new(cx0+cw0-82+14, fcy0+216)
-speedMinusLabel.Color = Color3.new(1,0.4,0.4); speedMinusLabel.Size = 15
+speedMinusLabel.Text = "-"; speedMinusLabel.Position = Vector2.new(cx0+cw0-64+12, fcy0+177)
+speedMinusLabel.Color = Color3.new(1,0.4,0.4); speedMinusLabel.Size = 14
 speedMinusLabel.Visible = false; speedMinusLabel.ZIndex = 5
 speedMinusLabel.Font = Drawing.Fonts.Monospace; speedMinusLabel.Center = true
 
 local speedPlusLabel = Drawing.new("Text")
-speedPlusLabel.Text = "+"; speedPlusLabel.Position = Vector2.new(cx0+cw0-42+14, fcy0+216)
-speedPlusLabel.Color = Color3.new(0.4,1,0.4); speedPlusLabel.Size = 15
+speedPlusLabel.Text = "+"; speedPlusLabel.Position = Vector2.new(cx0+cw0-34+12, fcy0+177)
+speedPlusLabel.Color = Color3.new(0.4,1,0.4); speedPlusLabel.Size = 14
 speedPlusLabel.Visible = false; speedPlusLabel.ZIndex = 5
 speedPlusLabel.Font = Drawing.Fonts.Monospace; speedPlusLabel.Center = true
 
@@ -352,6 +357,7 @@ local function showPage(page)
         setVisible(btn5Parts,true); setVisible(speedMinusParts,true); setVisible(speedPlusParts,true)
         btn0Label.Visible=true; btn1Label.Visible=true; btn2Label.Visible=true
         btn3Label.Visible=true; btn4Label.Visible=true
+        -- checkmarks only show when their toggle is ON
         speedTitleLabel.Visible=true; speedValueLabel.Visible=true
         speedMinusLabel.Visible=true; speedPlusLabel.Visible=true
         moveRoundedRect(sideHighlight, winX, winY+titleH+44)
@@ -388,11 +394,11 @@ local function updateAll()
     end
 
     moveRoundedRect(tab0BadgeParts,winX+8,winY+titleH+12)
-    tab0BadgeText.Position=Vector2.new(winX+19,winY+titleH+14)
-    tab0LabelText.Position=Vector2.new(winX+36,winY+titleH+15)
+    tab0BadgeText.Position=Vector2.new(winX+19,winY+titleH+21)
+    tab0LabelText.Position=Vector2.new(winX+36,winY+titleH+21)
     moveRoundedRect(tab1BadgeParts,winX+8,winY+titleH+56)
-    tab1BadgeText.Position=Vector2.new(winX+19,winY+titleH+58)
-    tab1LabelText.Position=Vector2.new(winX+36,winY+titleH+59)
+    tab1BadgeText.Position=Vector2.new(winX+19,winY+titleH+65)
+    tab1LabelText.Position=Vector2.new(winX+36,winY+titleH+65)
 
     moveRoundedRect(homeCard1,cx,cy)
     homeCard1Hdr.Position=Vector2.new(cx+10,cy+6)
@@ -416,24 +422,24 @@ local function updateAll()
     featTitle.Position=Vector2.new(cx,cy)
     featSep.From=Vector2.new(cx,cy+20); featSep.To=Vector2.new(cx+cw,cy+20)
 
-    moveRoundedRect(btn0Parts,cx,fcy);        moveRoundedRect(toggle0Parts,cx+cw-42,fcy+7)
-    moveRoundedRect(btn1Parts,cx,fcy+41);     moveRoundedRect(toggle1Parts,cx+cw-42,fcy+48)
-    moveRoundedRect(btn2Parts,cx,fcy+82);     moveRoundedRect(toggle2Parts,cx+cw-42,fcy+89)
-    moveRoundedRect(btn3Parts,cx,fcy+123);    moveRoundedRect(toggle3Parts,cx+cw-42,fcy+130)
-    moveRoundedRect(btn4Parts,cx,fcy+164);    moveRoundedRect(toggle4Parts,cx+cw-42,fcy+171)
-    moveRoundedRect(btn5Parts,cx,fcy+205)
-    moveRoundedRect(speedMinusParts,cx+cw-82,fcy+212)
-    moveRoundedRect(speedPlusParts,cx+cw-42,fcy+212)
+    moveRoundedRect(btn0Parts,cx,fcy);        moveRoundedRect(toggle0Parts,cx+8,fcy+6)
+    moveRoundedRect(btn1Parts,cx,fcy+34);     moveRoundedRect(toggle1Parts,cx+8,fcy+40)
+    moveRoundedRect(btn2Parts,cx,fcy+68);     moveRoundedRect(toggle2Parts,cx+8,fcy+74)
+    moveRoundedRect(btn3Parts,cx,fcy+102);    moveRoundedRect(toggle3Parts,cx+8,fcy+108)
+    moveRoundedRect(btn4Parts,cx,fcy+136);    moveRoundedRect(toggle4Parts,cx+8,fcy+142)
+    moveRoundedRect(btn5Parts,cx,fcy+170)
+    moveRoundedRect(speedMinusParts,cx+cw-64,fcy+176)
+    moveRoundedRect(speedPlusParts,cx+cw-34,fcy+176)
 
-    btn0Label.Position=Vector2.new(cx+10,fcy+10)
-    btn1Label.Position=Vector2.new(cx+10,fcy+51)
-    btn2Label.Position=Vector2.new(cx+10,fcy+92)
-    btn3Label.Position=Vector2.new(cx+10,fcy+133)
-    btn4Label.Position=Vector2.new(cx+10,fcy+174)
-    speedTitleLabel.Position=Vector2.new(cx+10,fcy+216)
-    speedValueLabel.Position=Vector2.new(cx+cw-112,fcy+216)
-    speedMinusLabel.Position=Vector2.new(cx+cw-82+14,fcy+216)
-    speedPlusLabel.Position=Vector2.new(cx+cw-42+14,fcy+216)
+    btn0Label.Position=Vector2.new(cx+32,fcy+8)
+    btn1Label.Position=Vector2.new(cx+32,fcy+42)
+    btn2Label.Position=Vector2.new(cx+32,fcy+76)
+    btn3Label.Position=Vector2.new(cx+32,fcy+110)
+    btn4Label.Position=Vector2.new(cx+32,fcy+144)
+    speedTitleLabel.Position=Vector2.new(cx+10,fcy+178)
+    speedValueLabel.Position=Vector2.new(cx+cw-90,fcy+178)
+    speedMinusLabel.Position=Vector2.new(cx+cw-64+12,fcy+177)
+    speedPlusLabel.Position=Vector2.new(cx+cw-34+12,fcy+177)
 end
 
 -- ─── Hit detection ────────────────────────────────────────────
@@ -447,32 +453,32 @@ local function isInsideTab1(x,y)
     return x>=winX and x<=winX+sideW and y>=winY+titleH+44 and y<=winY+titleH+88
 end
 local function isInsideToggle0(x,y)
-    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
-    return x>=cx+cw-42 and x<=cx+cw-10 and y>=fcy+7 and y<=fcy+28
+    local cx=winX+sideW+10; local fcy=winY+titleH+38
+    return x>=cx+8 and x<=cx+24 and y>=fcy+6 and y<=fcy+22
 end
 local function isInsideToggle1(x,y)
-    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
-    return x>=cx+cw-42 and x<=cx+cw-10 and y>=fcy+48 and y<=fcy+69
+    local cx=winX+sideW+10; local fcy=winY+titleH+38
+    return x>=cx+8 and x<=cx+24 and y>=fcy+40 and y<=fcy+56
 end
 local function isInsideToggle2(x,y)
-    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
-    return x>=cx+cw-42 and x<=cx+cw-10 and y>=fcy+89 and y<=fcy+110
+    local cx=winX+sideW+10; local fcy=winY+titleH+38
+    return x>=cx+8 and x<=cx+24 and y>=fcy+74 and y<=fcy+90
 end
 local function isInsideToggle3(x,y)
-    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
-    return x>=cx+cw-42 and x<=cx+cw-10 and y>=fcy+130 and y<=fcy+151
+    local cx=winX+sideW+10; local fcy=winY+titleH+38
+    return x>=cx+8 and x<=cx+24 and y>=fcy+108 and y<=fcy+124
 end
 local function isInsideToggle4(x,y)
-    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
-    return x>=cx+cw-42 and x<=cx+cw-10 and y>=fcy+171 and y<=fcy+192
+    local cx=winX+sideW+10; local fcy=winY+titleH+38
+    return x>=cx+8 and x<=cx+24 and y>=fcy+142 and y<=fcy+158
 end
 local function isInsideSpeedMinus(x,y)
     local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
-    return x>=cx+cw-82 and x<=cx+cw-54 and y>=fcy+212 and y<=fcy+233
+    return x>=cx+cw-64 and x<=cx+cw-40 and y>=fcy+176 and y<=fcy+192
 end
 local function isInsideSpeedPlus(x,y)
     local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
-    return x>=cx+cw-42 and x<=cx+cw-14 and y>=fcy+212 and y<=fcy+233
+    return x>=cx+cw-34 and x<=cx+cw-10 and y>=fcy+176 and y<=fcy+192
 end
 
 -- ─── ESP / Cham helpers ───────────────────────────────────────
