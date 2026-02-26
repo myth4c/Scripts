@@ -1,5 +1,8 @@
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer or Players:WaitForChild("LocalPlayer")
+local LocalPlayer = Players.LocalPlayer
+if not LocalPlayer then
+    repeat wait(0.1); LocalPlayer = Players.LocalPlayer until LocalPlayer
+end
 
 local winX, winY = 80, 80
 local winW, winH = 480, 365
@@ -14,6 +17,7 @@ local chamEsp         = false
 local autoFruits      = false
 local autoTpFruit     = false
 local autoFarmNearest = false
+local autoNpcFarm     = false
 local chamBoxes  = {}
 local chestIndex = 1
 local espLabels  = {}
@@ -23,6 +27,33 @@ local FARM_SPEED = 310
 local MIN_SPEED  = 50
 local MAX_SPEED  = 1000
 local SPEED_STEP = 50
+
+-- ─── NPC Farm / Island data ───────────────────────────────────
+local islandList = {
+    {name="Tiki2",         pos=Vector3.new(-16577.81, 107.2,   1226.22)},
+    {name="Tiki1",         pos=Vector3.new(-16546.72,  55.87,  -228.59)},
+    {name="Port",          pos=Vector3.new(  -706.75,  85.98,  5775.46)},
+    {name="Hydra1",        pos=Vector3.new(  6737.77, 127.56,  -715.37)},
+    {name="Hydra2",        pos=Vector3.new(  6651.94, 546.71,   260.22)},
+    {name="Hydra3",        pos=Vector3.new(  4563.77,1002.40,   824.84)},
+    {name="GreatTree1",    pos=Vector3.new(  2976.45,  74.41, -7919.18)},
+    {name="GreatTree2",    pos=Vector3.new(  3727.85, 124.12, -7153.10)},
+    {name="HauntedCastle", pos=Vector3.new( -9558.96, 172.28,  6139.46)},
+    {name="IceCream",      pos=Vector3.new(  -836.01,  65.99,-10973.16)},
+    {name="CakeLand",      pos=Vector3.new( -2115.22,  70.16,-12366.38)},
+    {name="Chocolate",     pos=Vector3.new(   314.05,  24.97,-12480.51)},
+    {name="Peanut",        pos=Vector3.new( -2093.83,  38.28,-10204.63)},
+    {name="Mansion",       pos=Vector3.new(-13330.71, 450.81, -7441.45)},
+    {name="TurtleCenter2", pos=Vector3.new(-13274.77, 391.72, -9791.60)},
+    {name="TurtleCenter1", pos=Vector3.new(-12019.83, 331.91,-10562.06)},
+    {name="TurtleEntrance",pos=Vector3.new(-10607.67, 331.94, -8782.75)},
+}
+local selectedIsland = 1
+local dropdownOpen   = false
+local DROP_N         = 17   -- all islands, no scroll
+local DROP_ROW_H     = 18   -- row height px
+local DROP_W         = 130  -- dropdown panel width (right-aligned under arrow)
+local ISLE_BOX_W     = 95   -- selected island display box width
 
 -- ─── Colors (Windy dark teal palette) ────────────────────────
 local bgColor         = Color3.new(0.06, 0.08, 0.09)
@@ -36,6 +67,8 @@ local accentColor     = Color3.new(0.0,  0.65, 0.32)
 local speedBtnColor   = Color3.new(0.14, 0.18, 0.19)
 local dimTextColor    = Color3.new(0.38, 0.50, 0.50)
 local sepColor        = Color3.new(0.13, 0.18, 0.19)
+local dropBgColor     = Color3.new(0.09, 0.12, 0.13)
+local dropHlColor     = Color3.new(0.0,  0.30, 0.15)
 
 -- ─── Drawing helpers ─────────────────────────────────────────
 local function makeRoundedRect(ox, oy, w, h, radius, color, zi)
@@ -246,9 +279,14 @@ local btn3Parts    = makeRoundedRect(cx0, fcy0+102,   cw0, 28, 4, btnColor, 2)
 local toggle3Parts = makeRoundedRect(cx0+8, fcy0+108, 16, 16, 3, toggleOffColor, 3)
 local btn4Parts    = makeRoundedRect(cx0, fcy0+136,   cw0, 28, 4, btnColor, 2)
 local toggle4Parts = makeRoundedRect(cx0+8, fcy0+142, 16, 16, 3, toggleOffColor, 3)
-local btn5Parts    = makeRoundedRect(cx0, fcy0+170,   cw0, 28, 4, btnColor, 2)
-local speedMinusParts = makeRoundedRect(cx0+cw0-64, fcy0+176, 24, 16, 3, speedBtnColor, 3)
-local speedPlusParts  = makeRoundedRect(cx0+cw0-34, fcy0+176, 24, 16, 3, speedBtnColor, 3)
+-- btn5: Auto NPC Farm — toggle left, island box + arrow right
+local btn5Parts      = makeRoundedRect(cx0, fcy0+170, cw0, 28, 4, btnColor, 2)
+local toggle5Parts   = makeRoundedRect(cx0+8, fcy0+176, 16, 16, 3, toggleOffColor, 3)
+local islandBoxParts = makeRoundedRect(cx0+cw0-ISLE_BOX_W-32, fcy0+174, ISLE_BOX_W, 20, 3, dropBgColor, 3)
+local dropArrowParts = makeRoundedRect(cx0+cw0-28, fcy0+174, 22, 20, 3, speedBtnColor, 4)
+-- Speed row
+local speedMinusParts = makeRoundedRect(cx0+cw0-64, fcy0+210, 24, 16, 3, speedBtnColor, 3)
+local speedPlusParts  = makeRoundedRect(cx0+cw0-34, fcy0+210, 24, 16, 3, speedBtnColor, 3)
 
 local btn0Label = Drawing.new("Text")
 btn0Label.Text = "Auto Farm Nearest"; btn0Label.Position = Vector2.new(cx0+32, fcy0+8)
@@ -275,36 +313,75 @@ btn4Label.Text = "Auto TP To Fruits"; btn4Label.Position = Vector2.new(cx0+32, f
 btn4Label.Color = Color3.new(1,0.3,0.3); btn4Label.Size = 12
 btn4Label.Visible = false; btn4Label.ZIndex = 4; btn4Label.Font = Drawing.Fonts.Monospace
 
+local btn5Label = Drawing.new("Text")
+btn5Label.Text = "Auto NPC Farm"; btn5Label.Position = Vector2.new(cx0+32, fcy0+178)
+btn5Label.Color = Color3.new(0,1,0); btn5Label.Size = 12
+btn5Label.Visible = false; btn5Label.ZIndex = 4; btn5Label.Font = Drawing.Fonts.Monospace
+
+local islandValueLabel = Drawing.new("Text")
+islandValueLabel.Text = islandList[selectedIsland].name
+islandValueLabel.Position = Vector2.new(cx0+cw0-ISLE_BOX_W-30, fcy0+178)
+islandValueLabel.Color = Color3.new(0.5,0.9,1); islandValueLabel.Size = 11
+islandValueLabel.Visible = false; islandValueLabel.ZIndex = 4; islandValueLabel.Font = Drawing.Fonts.Monospace
+
+local dropArrowLabel = Drawing.new("Text")
+dropArrowLabel.Text = "v"; dropArrowLabel.Position = Vector2.new(cx0+cw0-17, fcy0+176)
+dropArrowLabel.Color = Color3.new(1,1,1); dropArrowLabel.Size = 13
+dropArrowLabel.Visible = false; dropArrowLabel.ZIndex = 5; dropArrowLabel.Font = Drawing.Fonts.Monospace
+
 local speedTitleLabel = Drawing.new("Text")
-speedTitleLabel.Text = "Farm Speed:"; speedTitleLabel.Position = Vector2.new(cx0+10, fcy0+178)
+speedTitleLabel.Text = "Farm Speed:"; speedTitleLabel.Position = Vector2.new(cx0+10, fcy0+212)
 speedTitleLabel.Color = Color3.new(0.6,0.7,1); speedTitleLabel.Size = 12
 speedTitleLabel.Visible = false; speedTitleLabel.ZIndex = 4; speedTitleLabel.Font = Drawing.Fonts.Monospace
 
 local speedValueLabel = Drawing.new("Text")
 speedValueLabel.Text = tostring(FARM_SPEED)
-speedValueLabel.Position = Vector2.new(cx0+cw0-90, fcy0+178)
+speedValueLabel.Position = Vector2.new(cx0+cw0-90, fcy0+212)
 speedValueLabel.Color = Color3.new(1,1,1); speedValueLabel.Size = 12
 speedValueLabel.Visible = false; speedValueLabel.ZIndex = 4
 speedValueLabel.Font = Drawing.Fonts.Monospace; speedValueLabel.Center = true
 
 local speedMinusLabel = Drawing.new("Text")
-speedMinusLabel.Text = "-"; speedMinusLabel.Position = Vector2.new(cx0+cw0-64+12, fcy0+177)
+speedMinusLabel.Text = "-"; speedMinusLabel.Position = Vector2.new(cx0+cw0-64+12, fcy0+211)
 speedMinusLabel.Color = Color3.new(1,0.4,0.4); speedMinusLabel.Size = 14
 speedMinusLabel.Visible = false; speedMinusLabel.ZIndex = 5
 speedMinusLabel.Font = Drawing.Fonts.Monospace; speedMinusLabel.Center = true
 
 local speedPlusLabel = Drawing.new("Text")
-speedPlusLabel.Text = "+"; speedPlusLabel.Position = Vector2.new(cx0+cw0-34+12, fcy0+177)
+speedPlusLabel.Text = "+"; speedPlusLabel.Position = Vector2.new(cx0+cw0-34+12, fcy0+211)
 speedPlusLabel.Color = Color3.new(0.4,1,0.4); speedPlusLabel.Size = 14
 speedPlusLabel.Visible = false; speedPlusLabel.ZIndex = 5
 speedPlusLabel.Font = Drawing.Fonts.Monospace; speedPlusLabel.Center = true
+
+-- ─── Dropdown: narrow panel right-aligned under arrow, all 17 islands ─
+-- Arrow right edge = cx0+cw0-6. Panel width = DROP_W. Left edge = cx0+cw0-6-DROP_W
+local dropX = cx0+cw0-6-DROP_W
+local dropY = fcy0+198
+local dropdownBgParts   = makeRoundedRect(dropX, dropY, DROP_W, DROP_N*DROP_ROW_H+4, 3, dropBgColor, 18)
+local dropRowHighlights = {}
+local dropRowLabels     = {}
+for i = 1, DROP_N do
+    local ry = dropY+2+(i-1)*DROP_ROW_H
+    local hl = makeRoundedRect(dropX+2, ry, DROP_W-4, DROP_ROW_H-2, 2, dropBgColor, 19)
+    setVisible(hl, false)
+    table.insert(dropRowHighlights, hl)
+    local lbl = Drawing.new("Text")
+    lbl.Text = islandList[i].name
+    lbl.Position = Vector2.new(dropX+6, ry+2)
+    lbl.Color = (i==selectedIsland) and Color3.new(0,1,0) or Color3.new(1,1,1)
+    lbl.Size = 11; lbl.Visible = false; lbl.ZIndex = 20; lbl.Font = Drawing.Fonts.Monospace
+    table.insert(dropRowLabels, lbl)
+end
+setVisible(dropdownBgParts, false)
 
 setVisible(btn0Parts,false); setVisible(toggle0Parts,false)
 setVisible(btn1Parts,false); setVisible(toggle1Parts,false)
 setVisible(btn2Parts,false); setVisible(toggle2Parts,false)
 setVisible(btn3Parts,false); setVisible(toggle3Parts,false)
 setVisible(btn4Parts,false); setVisible(toggle4Parts,false)
-setVisible(btn5Parts,false); setVisible(speedMinusParts,false); setVisible(speedPlusParts,false)
+setVisible(btn5Parts,false); setVisible(toggle5Parts,false)
+setVisible(islandBoxParts,false); setVisible(dropArrowParts,false)
+setVisible(speedMinusParts,false); setVisible(speedPlusParts,false)
 
 -- ─── showPage ─────────────────────────────────────────────────
 local function showPage(page)
@@ -324,11 +401,17 @@ local function showPage(page)
         setVisible(btn2Parts,false); setVisible(toggle2Parts,false)
         setVisible(btn3Parts,false); setVisible(toggle3Parts,false)
         setVisible(btn4Parts,false); setVisible(toggle4Parts,false)
-        setVisible(btn5Parts,false); setVisible(speedMinusParts,false); setVisible(speedPlusParts,false)
+        setVisible(btn5Parts,false); setVisible(toggle5Parts,false)
+        setVisible(islandBoxParts,false); setVisible(dropArrowParts,false)
+        setVisible(speedMinusParts,false); setVisible(speedPlusParts,false)
         btn0Label.Visible=false; btn1Label.Visible=false; btn2Label.Visible=false
-        btn3Label.Visible=false; btn4Label.Visible=false
+        btn3Label.Visible=false; btn4Label.Visible=false; btn5Label.Visible=false
+        islandValueLabel.Visible=false; dropArrowLabel.Visible=false
         speedTitleLabel.Visible=false; speedValueLabel.Visible=false
         speedMinusLabel.Visible=false; speedPlusLabel.Visible=false
+        -- close dropdown if open
+        dropdownOpen=false; setVisible(dropdownBgParts,false)
+        for i=1,DROP_N do setVisible(dropRowHighlights[i],false); dropRowLabels[i].Visible=false end
         moveRoundedRect(sideHighlight, winX, winY+titleH)
         tab0BadgeText.Color=Color3.new(1,1,1); tab0LabelText.Color=Color3.new(1,1,1)
         colorRoundedRect(tab0BadgeParts, Color3.new(0,0.35,0.18))
@@ -349,9 +432,12 @@ local function showPage(page)
         setVisible(btn2Parts,true); setVisible(toggle2Parts,true)
         setVisible(btn3Parts,true); setVisible(toggle3Parts,true)
         setVisible(btn4Parts,true); setVisible(toggle4Parts,true)
-        setVisible(btn5Parts,true); setVisible(speedMinusParts,true); setVisible(speedPlusParts,true)
+        setVisible(btn5Parts,true); setVisible(toggle5Parts,true)
+        setVisible(islandBoxParts,true); setVisible(dropArrowParts,true)
+        setVisible(speedMinusParts,true); setVisible(speedPlusParts,true)
         btn0Label.Visible=true; btn1Label.Visible=true; btn2Label.Visible=true
-        btn3Label.Visible=true; btn4Label.Visible=true
+        btn3Label.Visible=true; btn4Label.Visible=true; btn5Label.Visible=true
+        islandValueLabel.Visible=true; dropArrowLabel.Visible=true
         speedTitleLabel.Visible=true; speedValueLabel.Visible=true
         speedMinusLabel.Visible=true; speedPlusLabel.Visible=true
         moveRoundedRect(sideHighlight, winX, winY+titleH+44)
@@ -421,19 +507,36 @@ local function updateAll()
     moveRoundedRect(btn2Parts,cx,fcy+68);     moveRoundedRect(toggle2Parts,cx+8,fcy+74)
     moveRoundedRect(btn3Parts,cx,fcy+102);    moveRoundedRect(toggle3Parts,cx+8,fcy+108)
     moveRoundedRect(btn4Parts,cx,fcy+136);    moveRoundedRect(toggle4Parts,cx+8,fcy+142)
-    moveRoundedRect(btn5Parts,cx,fcy+170)
-    moveRoundedRect(speedMinusParts,cx+cw-64,fcy+176)
-    moveRoundedRect(speedPlusParts,cx+cw-34,fcy+176)
+    moveRoundedRect(btn5Parts,cx,fcy+170);    moveRoundedRect(toggle5Parts,cx+8,fcy+176)
+    moveRoundedRect(islandBoxParts,cx+cw-ISLE_BOX_W-32,fcy+174)
+    moveRoundedRect(dropArrowParts,cx+cw-28,fcy+174)
+    moveRoundedRect(speedMinusParts,cx+cw-64,fcy+210)
+    moveRoundedRect(speedPlusParts,cx+cw-34,fcy+210)
 
     btn0Label.Position=Vector2.new(cx+32,fcy+8)
     btn1Label.Position=Vector2.new(cx+32,fcy+42)
     btn2Label.Position=Vector2.new(cx+32,fcy+76)
     btn3Label.Position=Vector2.new(cx+32,fcy+110)
     btn4Label.Position=Vector2.new(cx+32,fcy+144)
-    speedTitleLabel.Position=Vector2.new(cx+10,fcy+178)
-    speedValueLabel.Position=Vector2.new(cx+cw-90,fcy+178)
-    speedMinusLabel.Position=Vector2.new(cx+cw-64+12,fcy+177)
-    speedPlusLabel.Position=Vector2.new(cx+cw-34+12,fcy+177)
+    btn5Label.Position=Vector2.new(cx+32,fcy+178)
+    islandValueLabel.Position=Vector2.new(cx+cw-ISLE_BOX_W-30,fcy+178)
+    dropArrowLabel.Position=Vector2.new(cx+cw-17,fcy+176)
+    speedTitleLabel.Position=Vector2.new(cx+10,fcy+212)
+    speedValueLabel.Position=Vector2.new(cx+cw-90,fcy+212)
+    speedMinusLabel.Position=Vector2.new(cx+cw-64+12,fcy+211)
+    speedPlusLabel.Position=Vector2.new(cx+cw-34+12,fcy+211)
+
+    -- reposition dropdown panel if open
+    if dropdownOpen then
+        local dx = cx+cw-6-DROP_W
+        local dy = fcy+198
+        moveRoundedRect(dropdownBgParts,dx,dy)
+        for i=1,DROP_N do
+            local ry = dy+2+(i-1)*DROP_ROW_H
+            moveRoundedRect(dropRowHighlights[i],dx+2,ry)
+            dropRowLabels[i].Position=Vector2.new(dx+6,ry+2)
+        end
+    end
 end
 
 -- ─── Hit detection ────────────────────────────────────────────
@@ -466,16 +569,82 @@ local function isInsideToggle4(x,y)
     local cx=winX+sideW+10; local fcy=winY+titleH+38
     return x>=cx+8 and x<=cx+24 and y>=fcy+142 and y<=fcy+158
 end
+local function isInsideToggle5(x,y)
+    local cx=winX+sideW+10; local fcy=winY+titleH+38
+    return x>=cx+8 and x<=cx+24 and y>=fcy+176 and y<=fcy+192
+end
+local function isInsideDropdownArrow(x,y)
+    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
+    return x>=cx+cw-28 and x<=cx+cw-6 and y>=fcy+174 and y<=fcy+194
+end
 local function isInsideSpeedMinus(x,y)
     local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
-    return x>=cx+cw-64 and x<=cx+cw-40 and y>=fcy+176 and y<=fcy+192
+    return x>=cx+cw-64 and x<=cx+cw-40 and y>=fcy+210 and y<=fcy+226
 end
 local function isInsideSpeedPlus(x,y)
     local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
-    return x>=cx+cw-34 and x<=cx+cw-10 and y>=fcy+176 and y<=fcy+192
+    return x>=cx+cw-34 and x<=cx+cw-10 and y>=fcy+210 and y<=fcy+226
+end
+-- returns which dropdown row (1..DROP_N) was clicked, or nil
+local function getDropdownRowClick(x,y)
+    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
+    local dx = cx+cw-6-DROP_W
+    local topY = fcy+198
+    if x<dx or x>dx+DROP_W then return nil end
+    for i=1,DROP_N do
+        local rowY = topY+2+(i-1)*DROP_ROW_H
+        if y>=rowY and y<rowY+DROP_ROW_H then return i end
+    end
+    return nil
 end
 
--- ─── ESP / Cham helpers ───────────────────────────────────────
+-- ─── Dropdown helpers ─────────────────────────────────────────
+local function openDropdown()
+    dropdownOpen = true
+    local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
+    local dx=cx+cw-6-DROP_W; local dy=fcy+198
+    moveRoundedRect(dropdownBgParts,dx,dy)
+    setVisible(dropdownBgParts,true)
+    for i=1,DROP_N do
+        local ry=dy+2+(i-1)*DROP_ROW_H
+        moveRoundedRect(dropRowHighlights[i],dx+2,ry)
+        dropRowLabels[i].Position=Vector2.new(dx+6,ry+2)
+        colorRoundedRect(dropRowHighlights[i],(i==selectedIsland) and dropHlColor or dropBgColor)
+        dropRowLabels[i].Color=(i==selectedIsland) and Color3.new(0,1,0) or Color3.new(1,1,1)
+        setVisible(dropRowHighlights[i],true)
+        dropRowLabels[i].Visible=true
+    end
+    dropArrowLabel.Text="^"
+end
+
+local function closeDropdown()
+    dropdownOpen=false
+    setVisible(dropdownBgParts,false)
+    for i=1,DROP_N do
+        setVisible(dropRowHighlights[i],false)
+        dropRowLabels[i].Visible=false
+    end
+    dropArrowLabel.Text="v"
+end
+
+-- ─── NPC Farm logic ───────────────────────────────────────────
+local NPC_TWEEN_SPEED = 250
+
+local function npcTweenTo(hrp, targetPos)
+    local startPos = hrp.Position
+    local dx=targetPos.X-startPos.X; local dy=targetPos.Y-startPos.Y; local dz=targetPos.Z-startPos.Z
+    local distance = math.sqrt(dx*dx+dy*dy+dz*dz)
+    if distance < 0.1 then return end
+    local duration = distance/NPC_TWEEN_SPEED; local startTime = os.clock()
+    while true do
+        if not autoNpcFarm then return end
+        local alpha = math.min((os.clock()-startTime)/duration, 1)
+        hrp.Position = Vector3.new(startPos.X+dx*alpha, startPos.Y+dy*alpha, startPos.Z+dz*alpha)
+        hrp.Velocity = Vector3.new(0,0,0); hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+        if alpha >= 1 then break end
+        task.wait()
+    end
+end
 local function clearEspLabels()
     for _, entry in pairs(espLabels) do entry.label.Visible=false; entry.label:Remove() end
     espLabels = {}
@@ -710,6 +879,67 @@ end)
 
 task.spawn(function()
     while true do
+        if autoNpcFarm then
+            local Character = LocalPlayer.Character
+            local hrp = Character and Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                -- teleport to selected island first
+                local island = islandList[selectedIsland]
+                local ip = island.pos
+                notify("NPC Farm: going to "..island.name,"Myth4c's Script",2)
+                npcTweenTo(hrp, Vector3.new(ip.X, ip.Y, ip.Z))
+                task.wait(0.5)
+                -- disable collisions on character parts
+                local char2 = LocalPlayer.Character
+                if char2 then
+                    for _, part in pairs(char2:GetChildren()) do
+                        if part:IsA("BasePart") then part.CanCollide = false end
+                    end
+                end
+                -- farm loop
+                while autoNpcFarm do
+                    local hrp2 = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if not hrp2 then task.wait(0.1); continue end
+                    -- find any enemy
+                    local enemyFolder = game.Workspace:FindFirstChild("Enemies")
+                    local target = nil
+                    if enemyFolder then
+                        for _, child in pairs(enemyFolder:GetChildren()) do
+                            if child:IsA("Model") and isAlive(child) then
+                                local root = child:FindFirstChild("HumanoidRootPart")
+                                if root then target = child; break end
+                            end
+                        end
+                    end
+                    if not target then task.wait(0.5); break end -- no enemies, re-tp
+                    local troot = target:FindFirstChild("HumanoidRootPart")
+                    if not troot then task.wait(0.1); continue end
+                    -- move next to enemy
+                    npcTweenTo(hrp2, Vector3.new(troot.Position.X, troot.Position.Y, troot.Position.Z+5))
+                    if not autoNpcFarm then break end
+                    -- attack until dead
+                    local hum = target:FindFirstChildOfClass("Humanoid")
+                    local lastClick = 0
+                    while autoNpcFarm and isAlive(target) do
+                        local tr2 = target:FindFirstChild("HumanoidRootPart")
+                        if tr2 then
+                            hrp2.Position = Vector3.new(tr2.Position.X, tr2.Position.Y, tr2.Position.Z+5)
+                            hrp2.Velocity = Vector3.new(0,0,0); hrp2.AssemblyLinearVelocity = Vector3.new(0,0,0)
+                        end
+                        local now = os.clock()
+                        if now-lastClick >= 0.06 then mouse1click(); lastClick=now end
+                        task.wait()
+                    end
+                    pcall(function() target:Destroy() end)
+                end
+            end
+            task.wait(0.1)
+        else task.wait(0.1) end
+    end
+end)
+
+task.spawn(function()
+    while true do
         if fruitEsp then
             local Character = LocalPlayer.Character
             local HumanoidRootPart = Character and Character:FindFirstChild("HumanoidRootPart")
@@ -772,7 +1002,18 @@ task.spawn(function()
         local mouse=LocalPlayer:GetMouse(); local mx,my=mouse.X,mouse.Y
         local pressing=ismouse1pressed()
         if pressing and not wasPressed then
-            if isInsideTitleBar(mx,my) then
+            -- dropdown row click (highest priority, checked before title/tabs)
+            if dropdownOpen and currentPage=="features" then
+                local rowIdx = getDropdownRowClick(mx,my)
+                if rowIdx then
+                    selectedIsland = rowIdx
+                    islandValueLabel.Text = islandList[selectedIsland].name
+                    notify("Island: "..islandList[selectedIsland].name,"Myth4c's Script",1)
+                    closeDropdown()
+                else
+                    closeDropdown()
+                end
+            elseif isInsideTitleBar(mx,my) then
                 dragging=true; dragOffX=mx-winX; dragOffY=my-winY
             elseif isInsideTab0(mx,my) then showPage("home")
             elseif isInsideTab1(mx,my) then showPage("features")
@@ -798,6 +1039,12 @@ task.spawn(function()
                     autoTpFruit=not autoTpFruit
                     colorRoundedRect(toggle4Parts, autoTpFruit and toggleOnColor or toggleOffColor)
                     notify(autoTpFruit and "TP to Fruit ON!" or "TP to Fruit OFF!","Myth4c's Script",2)
+                elseif isInsideToggle5(mx,my) then
+                    autoNpcFarm=not autoNpcFarm
+                    colorRoundedRect(toggle5Parts, autoNpcFarm and toggleOnColor or toggleOffColor)
+                    notify(autoNpcFarm and "Auto NPC Farm ON!" or "Auto NPC Farm OFF!","Myth4c's Script",2)
+                elseif isInsideDropdownArrow(mx,my) then
+                    if dropdownOpen then closeDropdown() else openDropdown() end
                 elseif isInsideSpeedMinus(mx,my) then
                     if FARM_SPEED > MIN_SPEED then
                         FARM_SPEED=FARM_SPEED-SPEED_STEP; speedValueLabel.Text=tostring(FARM_SPEED)
@@ -816,3 +1063,5 @@ task.spawn(function()
         wasPressed=pressing; task.wait(0.01)
     end
 end)
+
+-- (no scroll needed — all islands shown at once)
