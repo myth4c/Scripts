@@ -28,6 +28,8 @@ local MIN_SPEED  = 50
 local MAX_SPEED  = 1000
 local SPEED_STEP = 50
 
+
+
 -- ─── NPC Farm / Island data ───────────────────────────────────
 local islandList = {
     {name="Tiki2",         pos=Vector3.new(-16577.81, 107.2,   1226.22)},
@@ -280,6 +282,12 @@ detText3.Text="Almost Detected"; detText3.Position=Vector2.new(cx0+28, cy0+235)
 detText3.Color=Color3.new(1,1,1); detText3.Size=12
 detText3.Visible=true; detText3.ZIndex=4; detText3.Font=Drawing.Fonts.Monospace
 
+local homeIdeasText = Drawing.new("Text")
+homeIdeasText.Text = "If you have Ideas To Add Dm @kktasus#8563"
+homeIdeasText.Position = Vector2.new(cx0+10, cy0+300)
+homeIdeasText.Color = accentColor; homeIdeasText.Size = 11
+homeIdeasText.Visible = true; homeIdeasText.ZIndex = 4; homeIdeasText.Font = Drawing.Fonts.Monospace
+
 -- ─── PVP page ─────────────────────────────────────────────────
 local pvpTitle = Drawing.new("Text")
 pvpTitle.Text = "PVP Settings"; pvpTitle.Position = Vector2.new(cx0, cy0)
@@ -307,6 +315,11 @@ local pvpComingSoon2 = Drawing.new("Text")
 pvpComingSoon2.Text = "PVP features are in development"; pvpComingSoon2.Position = Vector2.new(cx0+28, fcy0+44)
 pvpComingSoon2.Color = dimTextColor; pvpComingSoon2.Size = 11
 pvpComingSoon2.Visible = false; pvpComingSoon2.ZIndex = 4; pvpComingSoon2.Font = Drawing.Fonts.Monospace
+local pvpNote = Drawing.new("Text")
+pvpNote.Text = "If you want silent aim its literally in matcha"
+pvpNote.Position = Vector2.new(cx0+10, fcy0+80)
+pvpNote.Color = Color3.new(0.5,0.8,1); pvpNote.Size = 11
+pvpNote.Visible = false; pvpNote.ZIndex = 4; pvpNote.Font = Drawing.Fonts.Monospace
 
 setVisible(pvpCard1, false)
 
@@ -447,6 +460,7 @@ local function showPage(page)
     dotGreen.Visible=false; detText1.Visible=false
     dotYellow.Visible=false; detText2.Visible=false
     dotRed.Visible=false; detText3.Visible=false
+    homeIdeasText.Visible=false
     -- features
     featTitle.Visible=false; featSep.Visible=false
     setVisible(btn0Parts,false); setVisible(toggle0Parts,false)
@@ -468,6 +482,7 @@ local function showPage(page)
     pvpTitle.Visible=false; pvpSep.Visible=false
     setVisible(pvpCard1,false); pvpCard1Hdr.Visible=false; pvpCard1Sep.Visible=false
     pvpComingSoonDot.Visible=false; pvpComingSoon1.Visible=false; pvpComingSoon2.Visible=false
+    pvpNote.Visible=false
     -- reset all badge colors
     tab0BadgeText.Color=Color3.new(0.6,0.7,0.7); tab0LabelText.Color=Color3.new(0.6,0.7,0.7)
     colorRoundedRect(tab0BadgeParts, Color3.new(0.15,0.18,0.19))
@@ -487,6 +502,7 @@ local function showPage(page)
         dotGreen.Visible=true; detText1.Visible=true
         dotYellow.Visible=true; detText2.Visible=true
         dotRed.Visible=true; detText3.Visible=true
+        homeIdeasText.Visible=true
         moveRoundedRect(sideHighlight, winX, winY+titleH)
         tab0BadgeText.Color=Color3.new(1,1,1); tab0LabelText.Color=Color3.new(1,1,1)
         colorRoundedRect(tab0BadgeParts, Color3.new(0,0.35,0.18))
@@ -512,10 +528,35 @@ local function showPage(page)
         pvpTitle.Visible=true; pvpSep.Visible=true
         setVisible(pvpCard1,true); pvpCard1Hdr.Visible=true; pvpCard1Sep.Visible=true
         pvpComingSoonDot.Visible=true; pvpComingSoon1.Visible=true; pvpComingSoon2.Visible=true
+        pvpNote.Visible=true
         moveRoundedRect(sideHighlight, winX, winY+titleH+88)
         tab2BadgeText.Color=Color3.new(1,1,1); tab2LabelText.Color=Color3.new(1,1,1)
         colorRoundedRect(tab2BadgeParts, Color3.new(0,0.35,0.18))
     end
+end
+
+-- ─── Outline all text objects ────────────────────────────────
+-- Drawing text with no outline can appear invisible on certain
+-- backgrounds. Set Outline = true on every text object at once.
+do
+    local allText = {
+        titleText, subtitleText,
+        tab0BadgeText, tab0LabelText,
+        tab1BadgeText, tab1LabelText,
+        tab2BadgeText, tab2LabelText,
+        homeCard1Hdr, homeWelcome1, homeWelcome2, homeWelcome3, homeWelcome4,
+        homeCard2Hdr, homeEspText,
+        homeCard3Hdr, detText1, detText2, detText3,
+        homeIdeasText,
+        pvpTitle, pvpCard1Hdr, pvpComingSoon1, pvpComingSoon2, pvpNote,
+        featTitle,
+        btn0Label, btn1Label, btn2Label, btn3Label, btn4Label, btn5Label,
+        islandValueLabel, dropArrowLabel,
+        speedTitleLabel, speedValueLabel, speedMinusLabel, speedPlusLabel,
+    }
+    for _, t in pairs(allText) do t.Outline = true end
+    -- also outline dropdown row labels
+    for i = 1, DROP_N do dropRowLabels[i].Outline = true end
 end
 
 showPage("home")
@@ -575,6 +616,7 @@ local function updateAll()
     dotGreen.Position=Vector2.new(cx+16,cy+205); detText1.Position=Vector2.new(cx+28,cy+199)
     dotYellow.Position=Vector2.new(cx+16,cy+223); detText2.Position=Vector2.new(cx+28,cy+217)
     dotRed.Position=Vector2.new(cx+16,cy+241); detText3.Position=Vector2.new(cx+28,cy+235)
+    homeIdeasText.Position=Vector2.new(cx+10,cy+300)
 
     featTitle.Position=Vector2.new(cx,cy)
     featSep.From=Vector2.new(cx,cy+20); featSep.To=Vector2.new(cx+cw,cy+20)
@@ -587,6 +629,7 @@ local function updateAll()
     pvpComingSoonDot.Position=Vector2.new(cx+16,fcy+38)
     pvpComingSoon1.Position=Vector2.new(cx+28,fcy+27)
     pvpComingSoon2.Position=Vector2.new(cx+28,fcy+44)
+    pvpNote.Position=Vector2.new(cx+10,fcy+80)
 
     moveRoundedRect(btn0Parts,cx,fcy);        moveRoundedRect(toggle0Parts,cx+8,fcy+6)
     moveRoundedRect(btn1Parts,cx,fcy+34);     moveRoundedRect(toggle1Parts,cx+8,fcy+40)
@@ -1083,6 +1126,8 @@ task.spawn(function()
         task.wait(0.05)
     end
 end)
+
+
 
 -- ─── Input loop ───────────────────────────────────────────────
 task.spawn(function()
