@@ -190,6 +190,17 @@ tab1LabelText.Text = "Features"; tab1LabelText.Position = Vector2.new(winX+36, w
 tab1LabelText.Color = Color3.new(0.6,0.7,0.7); tab1LabelText.Size = 13
 tab1LabelText.Visible = true; tab1LabelText.ZIndex = 5; tab1LabelText.Font = Drawing.Fonts.Monospace
 
+-- ─── Sidebar Tab 2: PVP ───────────────────────────────────────
+local tab2BadgeParts = makeRoundedRect(winX+8, winY+titleH+100, 22, 20, 3, Color3.new(0.15,0.18,0.19), 4)
+local tab2BadgeText  = Drawing.new("Text")
+tab2BadgeText.Text = "P"; tab2BadgeText.Position = Vector2.new(winX+19, winY+titleH+109)
+tab2BadgeText.Color = Color3.new(0.6,0.7,0.7); tab2BadgeText.Size = 12; tab2BadgeText.Center = true
+tab2BadgeText.Visible = true; tab2BadgeText.ZIndex = 5; tab2BadgeText.Font = Drawing.Fonts.Monospace
+local tab2LabelText = Drawing.new("Text")
+tab2LabelText.Text = "PVP"; tab2LabelText.Position = Vector2.new(winX+36, winY+titleH+109)
+tab2LabelText.Color = Color3.new(0.6,0.7,0.7); tab2LabelText.Size = 13
+tab2LabelText.Visible = true; tab2LabelText.ZIndex = 5; tab2LabelText.Font = Drawing.Fonts.Monospace
+
 -- ─── Build-time content coords ────────────────────────────────
 local cx0  = winX+sideW+10
 local cy0  = winY+titleH+10
@@ -268,6 +279,36 @@ local detText3 = Drawing.new("Text")
 detText3.Text="Almost Detected"; detText3.Position=Vector2.new(cx0+28, cy0+235)
 detText3.Color=Color3.new(1,1,1); detText3.Size=12
 detText3.Visible=true; detText3.ZIndex=4; detText3.Font=Drawing.Fonts.Monospace
+
+-- ─── PVP page ─────────────────────────────────────────────────
+local pvpTitle = Drawing.new("Text")
+pvpTitle.Text = "PVP Settings"; pvpTitle.Position = Vector2.new(cx0, cy0)
+pvpTitle.Color = Color3.new(1,1,1); pvpTitle.Size = 16
+pvpTitle.Visible = false; pvpTitle.ZIndex = 4; pvpTitle.Font = Drawing.Fonts.Monospace
+local pvpSep = makeLine(cx0, cy0+20, cx0+cw0, cy0+20, sepColor, 1, 3)
+pvpSep.Visible = false
+
+local pvpCard1 = makeRoundedRect(cx0, fcy0, cw0, 64, 5, cardColor, 2)
+local pvpCard1Hdr = Drawing.new("Text")
+pvpCard1Hdr.Text = "STATUS"; pvpCard1Hdr.Position = Vector2.new(cx0+10, fcy0+6)
+pvpCard1Hdr.Color = dimTextColor; pvpCard1Hdr.Size = 11
+pvpCard1Hdr.Visible = false; pvpCard1Hdr.ZIndex = 4; pvpCard1Hdr.Font = Drawing.Fonts.Monospace
+local pvpCard1Sep = makeLine(cx0+6, fcy0+20, cx0+cw0-6, fcy0+20, sepColor, 1, 3)
+pvpCard1Sep.Visible = false
+local pvpComingSoonDot = Drawing.new("Circle")
+pvpComingSoonDot.Radius = 5; pvpComingSoonDot.Filled = true; pvpComingSoonDot.NumSides = 32
+pvpComingSoonDot.Color = Color3.new(1,0.7,0); pvpComingSoonDot.ZIndex = 4; pvpComingSoonDot.Visible = false
+pvpComingSoonDot.Position = Vector2.new(cx0+16, fcy0+38)
+local pvpComingSoon1 = Drawing.new("Text")
+pvpComingSoon1.Text = "Coming Soon"; pvpComingSoon1.Position = Vector2.new(cx0+28, fcy0+27)
+pvpComingSoon1.Color = Color3.new(1,1,1); pvpComingSoon1.Size = 14
+pvpComingSoon1.Visible = false; pvpComingSoon1.ZIndex = 4; pvpComingSoon1.Font = Drawing.Fonts.Monospace
+local pvpComingSoon2 = Drawing.new("Text")
+pvpComingSoon2.Text = "PVP features are in development"; pvpComingSoon2.Position = Vector2.new(cx0+28, fcy0+44)
+pvpComingSoon2.Color = dimTextColor; pvpComingSoon2.Size = 11
+pvpComingSoon2.Visible = false; pvpComingSoon2.ZIndex = 4; pvpComingSoon2.Font = Drawing.Fonts.Monospace
+
+setVisible(pvpCard1, false)
 
 -- ─── FEATURES page ────────────────────────────────────────────
 local featTitle = Drawing.new("Text")
@@ -394,6 +435,48 @@ setVisible(speedMinusParts,false); setVisible(speedPlusParts,false)
 -- ─── showPage ─────────────────────────────────────────────────
 local function showPage(page)
     currentPage = page
+
+    -- ── always hide everything first ──
+    -- home
+    setVisible(homeCard1,false); homeCard1Hdr.Visible=false; homeCard1Sep.Visible=false
+    homeStatusDot.Visible=false; homeWelcome1.Visible=false; homeWelcome2.Visible=false
+    homeWelcome3.Visible=false; homeWelcome4.Visible=false
+    setVisible(homeCard2,false); homeCard2Hdr.Visible=false; homeCard2Sep.Visible=false
+    homeEspText.Visible=false
+    setVisible(homeCard3,false); homeCard3Hdr.Visible=false; homeCard3Sep.Visible=false
+    dotGreen.Visible=false; detText1.Visible=false
+    dotYellow.Visible=false; detText2.Visible=false
+    dotRed.Visible=false; detText3.Visible=false
+    -- features
+    featTitle.Visible=false; featSep.Visible=false
+    setVisible(btn0Parts,false); setVisible(toggle0Parts,false)
+    setVisible(btn1Parts,false); setVisible(toggle1Parts,false)
+    setVisible(btn2Parts,false); setVisible(toggle2Parts,false)
+    setVisible(btn3Parts,false); setVisible(toggle3Parts,false)
+    setVisible(btn4Parts,false); setVisible(toggle4Parts,false)
+    setVisible(btn5Parts,false); setVisible(toggle5Parts,false)
+    setVisible(islandBoxParts,false); setVisible(dropArrowParts,false)
+    setVisible(speedMinusParts,false); setVisible(speedPlusParts,false)
+    btn0Label.Visible=false; btn1Label.Visible=false; btn2Label.Visible=false
+    btn3Label.Visible=false; btn4Label.Visible=false; btn5Label.Visible=false
+    islandValueLabel.Visible=false; dropArrowLabel.Visible=false
+    speedTitleLabel.Visible=false; speedValueLabel.Visible=false
+    speedMinusLabel.Visible=false; speedPlusLabel.Visible=false
+    dropdownOpen=false; setVisible(dropdownBgParts,false)
+    for i=1,DROP_N do setVisible(dropRowHighlights[i],false); dropRowLabels[i].Visible=false end
+    -- pvp
+    pvpTitle.Visible=false; pvpSep.Visible=false
+    setVisible(pvpCard1,false); pvpCard1Hdr.Visible=false; pvpCard1Sep.Visible=false
+    pvpComingSoonDot.Visible=false; pvpComingSoon1.Visible=false; pvpComingSoon2.Visible=false
+    -- reset all badge colors
+    tab0BadgeText.Color=Color3.new(0.6,0.7,0.7); tab0LabelText.Color=Color3.new(0.6,0.7,0.7)
+    colorRoundedRect(tab0BadgeParts, Color3.new(0.15,0.18,0.19))
+    tab1BadgeText.Color=Color3.new(0.6,0.7,0.7); tab1LabelText.Color=Color3.new(0.6,0.7,0.7)
+    colorRoundedRect(tab1BadgeParts, Color3.new(0.15,0.18,0.19))
+    tab2BadgeText.Color=Color3.new(0.6,0.7,0.7); tab2LabelText.Color=Color3.new(0.6,0.7,0.7)
+    colorRoundedRect(tab2BadgeParts, Color3.new(0.15,0.18,0.19))
+
+    -- ── show the active page ──
     if page == "home" then
         setVisible(homeCard1,true); homeCard1Hdr.Visible=true; homeCard1Sep.Visible=true
         homeStatusDot.Visible=true; homeWelcome1.Visible=true; homeWelcome2.Visible=true
@@ -404,38 +487,10 @@ local function showPage(page)
         dotGreen.Visible=true; detText1.Visible=true
         dotYellow.Visible=true; detText2.Visible=true
         dotRed.Visible=true; detText3.Visible=true
-        featTitle.Visible=false; featSep.Visible=false
-        setVisible(btn0Parts,false); setVisible(toggle0Parts,false)
-        setVisible(btn1Parts,false); setVisible(toggle1Parts,false)
-        setVisible(btn2Parts,false); setVisible(toggle2Parts,false)
-        setVisible(btn3Parts,false); setVisible(toggle3Parts,false)
-        setVisible(btn4Parts,false); setVisible(toggle4Parts,false)
-        setVisible(btn5Parts,false); setVisible(toggle5Parts,false)
-        setVisible(islandBoxParts,false); setVisible(dropArrowParts,false)
-        setVisible(speedMinusParts,false); setVisible(speedPlusParts,false)
-        btn0Label.Visible=false; btn1Label.Visible=false; btn2Label.Visible=false
-        btn3Label.Visible=false; btn4Label.Visible=false; btn5Label.Visible=false
-        islandValueLabel.Visible=false; dropArrowLabel.Visible=false
-        speedTitleLabel.Visible=false; speedValueLabel.Visible=false
-        speedMinusLabel.Visible=false; speedPlusLabel.Visible=false
-        -- close dropdown if open
-        dropdownOpen=false; setVisible(dropdownBgParts,false)
-        for i=1,DROP_N do setVisible(dropRowHighlights[i],false); dropRowLabels[i].Visible=false end
         moveRoundedRect(sideHighlight, winX, winY+titleH)
         tab0BadgeText.Color=Color3.new(1,1,1); tab0LabelText.Color=Color3.new(1,1,1)
         colorRoundedRect(tab0BadgeParts, Color3.new(0,0.35,0.18))
-        tab1BadgeText.Color=Color3.new(0.6,0.7,0.7); tab1LabelText.Color=Color3.new(0.6,0.7,0.7)
-        colorRoundedRect(tab1BadgeParts, Color3.new(0.15,0.18,0.19))
-    else
-        setVisible(homeCard1,false); homeCard1Hdr.Visible=false; homeCard1Sep.Visible=false
-        homeStatusDot.Visible=false; homeWelcome1.Visible=false; homeWelcome2.Visible=false
-        homeWelcome3.Visible=false; homeWelcome4.Visible=false
-        setVisible(homeCard2,false); homeCard2Hdr.Visible=false; homeCard2Sep.Visible=false
-        homeEspText.Visible=false
-        setVisible(homeCard3,false); homeCard3Hdr.Visible=false; homeCard3Sep.Visible=false
-        dotGreen.Visible=false; detText1.Visible=false
-        dotYellow.Visible=false; detText2.Visible=false
-        dotRed.Visible=false; detText3.Visible=false
+    elseif page == "features" then
         featTitle.Visible=true; featSep.Visible=true
         setVisible(btn0Parts,true); setVisible(toggle0Parts,true)
         setVisible(btn1Parts,true); setVisible(toggle1Parts,true)
@@ -451,10 +506,15 @@ local function showPage(page)
         speedTitleLabel.Visible=true; speedValueLabel.Visible=true
         speedMinusLabel.Visible=true; speedPlusLabel.Visible=true
         moveRoundedRect(sideHighlight, winX, winY+titleH+44)
-        tab0BadgeText.Color=Color3.new(0.6,0.7,0.7); tab0LabelText.Color=Color3.new(0.6,0.7,0.7)
-        colorRoundedRect(tab0BadgeParts, Color3.new(0.15,0.18,0.19))
         tab1BadgeText.Color=Color3.new(1,1,1); tab1LabelText.Color=Color3.new(1,1,1)
         colorRoundedRect(tab1BadgeParts, Color3.new(0,0.35,0.18))
+    elseif page == "pvp" then
+        pvpTitle.Visible=true; pvpSep.Visible=true
+        setVisible(pvpCard1,true); pvpCard1Hdr.Visible=true; pvpCard1Sep.Visible=true
+        pvpComingSoonDot.Visible=true; pvpComingSoon1.Visible=true; pvpComingSoon2.Visible=true
+        moveRoundedRect(sideHighlight, winX, winY+titleH+88)
+        tab2BadgeText.Color=Color3.new(1,1,1); tab2LabelText.Color=Color3.new(1,1,1)
+        colorRoundedRect(tab2BadgeParts, Color3.new(0,0.35,0.18))
     end
 end
 
@@ -479,8 +539,10 @@ local function updateAll()
 
     if currentPage=="home" then
         moveRoundedRect(sideHighlight,winX,winY+titleH)
-    else
+    elseif currentPage=="features" then
         moveRoundedRect(sideHighlight,winX,winY+titleH+44)
+    else
+        moveRoundedRect(sideHighlight,winX,winY+titleH+88)
     end
 
     moveRoundedRect(tab0BadgeParts,winX+8,winY+titleH+12)
@@ -489,6 +551,9 @@ local function updateAll()
     moveRoundedRect(tab1BadgeParts,winX+8,winY+titleH+56)
     tab1BadgeText.Position=Vector2.new(winX+19,winY+titleH+65)
     tab1LabelText.Position=Vector2.new(winX+36,winY+titleH+65)
+    moveRoundedRect(tab2BadgeParts,winX+8,winY+titleH+100)
+    tab2BadgeText.Position=Vector2.new(winX+19,winY+titleH+109)
+    tab2LabelText.Position=Vector2.new(winX+36,winY+titleH+109)
 
     moveRoundedRect(homeCard1,cx,cy)
     homeCard1Hdr.Position=Vector2.new(cx+10,cy+6)
@@ -513,6 +578,15 @@ local function updateAll()
 
     featTitle.Position=Vector2.new(cx,cy)
     featSep.From=Vector2.new(cx,cy+20); featSep.To=Vector2.new(cx+cw,cy+20)
+
+    pvpTitle.Position=Vector2.new(cx,cy)
+    pvpSep.From=Vector2.new(cx,cy+20); pvpSep.To=Vector2.new(cx+cw,cy+20)
+    moveRoundedRect(pvpCard1,cx,fcy)
+    pvpCard1Hdr.Position=Vector2.new(cx+10,fcy+6)
+    pvpCard1Sep.From=Vector2.new(cx+6,fcy+20); pvpCard1Sep.To=Vector2.new(cx+cw-6,fcy+20)
+    pvpComingSoonDot.Position=Vector2.new(cx+16,fcy+38)
+    pvpComingSoon1.Position=Vector2.new(cx+28,fcy+27)
+    pvpComingSoon2.Position=Vector2.new(cx+28,fcy+44)
 
     moveRoundedRect(btn0Parts,cx,fcy);        moveRoundedRect(toggle0Parts,cx+8,fcy+6)
     moveRoundedRect(btn1Parts,cx,fcy+34);     moveRoundedRect(toggle1Parts,cx+8,fcy+40)
@@ -560,6 +634,9 @@ local function isInsideTab0(x,y)
 end
 local function isInsideTab1(x,y)
     return x>=winX and x<=winX+sideW and y>=winY+titleH+44 and y<=winY+titleH+88
+end
+local function isInsideTab2(x,y)
+    return x>=winX and x<=winX+sideW and y>=winY+titleH+88 and y<=winY+titleH+132
 end
 local function isInsideToggle0(x,y)
     local cx=winX+sideW+10; local fcy=winY+titleH+38
@@ -1029,6 +1106,7 @@ task.spawn(function()
                 dragging=true; dragOffX=mx-winX; dragOffY=my-winY
             elseif isInsideTab0(mx,my) then showPage("home")
             elseif isInsideTab1(mx,my) then showPage("features")
+            elseif isInsideTab2(mx,my) then showPage("pvp")
             elseif currentPage=="features" then
                 if isInsideToggle0(mx,my) then
                     autoFarmNearest=not autoFarmNearest
