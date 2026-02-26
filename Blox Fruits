@@ -124,24 +124,30 @@ homeText.Visible = true; homeText.ZIndex = 4; homeText.Font = Drawing.Fonts.Mono
 
 local homeStatus = Drawing.new("Text")
 homeStatus.Text = "  - Not Detected At All\n  - Glitchy\n  - Almost Detected"
-homeStatus.Position = Vector2.new(winX+sideW+25, winY+titleH+60)
+homeStatus.Position = Vector2.new(winX+sideW+25, winY+titleH+110)
 homeStatus.Color = Color3.new(0.9,0.9,0.9); homeStatus.Size = 13
 homeStatus.Visible = true; homeStatus.ZIndex = 4; homeStatus.Font = Drawing.Fonts.Monospace
+
+local espInfoText = Drawing.new("Text")
+espInfoText.Text = "If Fruit ESP Says\nSpawned Fruit = \nSpawned / Fruit Notifier"
+espInfoText.Position = Vector2.new(winX+sideW+15, winY+titleH+48)
+espInfoText.Color = Color3.new(0.6, 0.8, 1); espInfoText.Size = 12
+espInfoText.Visible = true; espInfoText.ZIndex = 4; espInfoText.Font = Drawing.Fonts.Monospace
 
 local dotGreen = Drawing.new("Circle")
 dotGreen.Radius = 5; dotGreen.Filled = true; dotGreen.NumSides = 32
 dotGreen.Color = Color3.new(0, 1, 0); dotGreen.Visible = true; dotGreen.ZIndex = 5
-dotGreen.Position = Vector2.new(winX+sideW+20, winY+titleH+66)
+dotGreen.Position = Vector2.new(winX+sideW+20, winY+titleH+116)
 
 local dotYellow = Drawing.new("Circle")
 dotYellow.Radius = 5; dotYellow.Filled = true; dotYellow.NumSides = 32
 dotYellow.Color = Color3.new(1, 0.85, 0); dotYellow.Visible = true; dotYellow.ZIndex = 5
-dotYellow.Position = Vector2.new(winX+sideW+20, winY+titleH+82)
+dotYellow.Position = Vector2.new(winX+sideW+20, winY+titleH+132)
 
 local dotRed = Drawing.new("Circle")
 dotRed.Radius = 5; dotRed.Filled = true; dotRed.NumSides = 32
 dotRed.Color = Color3.new(1, 0, 0); dotRed.Visible = true; dotRed.ZIndex = 5
-dotRed.Position = Vector2.new(winX+sideW+20, winY+titleH+98)
+dotRed.Position = Vector2.new(winX+sideW+20, winY+titleH+148)
 
 local contentX = winX+sideW+10; local contentY = winY+titleH+10; local contentW = winW-sideW-20
 
@@ -161,7 +167,7 @@ btn1Label.Visible = false; btn1Label.ZIndex = 4; btn1Label.Font = Drawing.Fonts.
 
 local btn2Label = Drawing.new("Text")
 btn2Label.Text = "Fruit ESP"; btn2Label.Position = Vector2.new(contentX+10, contentY+65)
-btn2Label.Color = Color3.new(0.85,0.85,0.85); btn2Label.Size = 13
+btn2Label.Color = Color3.new(0, 1, 0); btn2Label.Size = 13
 btn2Label.Visible = false; btn2Label.ZIndex = 4; btn2Label.Font = Drawing.Fonts.Monospace
 
 local btn3Label = Drawing.new("Text")
@@ -184,6 +190,7 @@ local function showPage(page)
     if page == "home" then
         homeText.Visible = true
         homeStatus.Visible = true
+        espInfoText.Visible = true
         dotGreen.Visible = true; dotYellow.Visible = true; dotRed.Visible = true
         setVisible(btn1Parts, false); setVisible(toggle1Parts, false)
         setVisible(btn2Parts, false); setVisible(toggle2Parts, false)
@@ -195,6 +202,7 @@ local function showPage(page)
     else
         homeText.Visible = false
         homeStatus.Visible = false
+        espInfoText.Visible = false
         dotGreen.Visible = false; dotYellow.Visible = false; dotRed.Visible = false
         setVisible(btn1Parts, true); setVisible(toggle1Parts, true)
         setVisible(btn2Parts, true); setVisible(toggle2Parts, true)
@@ -216,10 +224,11 @@ local function updateAll()
     homeLabel.Position    = Vector2.new(winX+sideW/2, winY+titleH+8)
     featuresLabel.Position= Vector2.new(winX+sideW/2, winY+titleH+42)
     homeText.Position     = Vector2.new(winX+sideW+15, winY+titleH+20)
-    homeStatus.Position   = Vector2.new(winX+sideW+25, winY+titleH+60)
-    dotGreen.Position  = Vector2.new(winX+sideW+20, winY+titleH+66)
-    dotYellow.Position = Vector2.new(winX+sideW+20, winY+titleH+82)
-    dotRed.Position    = Vector2.new(winX+sideW+20, winY+titleH+98)
+    espInfoText.Position  = Vector2.new(winX+sideW+15, winY+titleH+48)
+    homeStatus.Position   = Vector2.new(winX+sideW+25, winY+titleH+110)
+    dotGreen.Position  = Vector2.new(winX+sideW+20, winY+titleH+116)
+    dotYellow.Position = Vector2.new(winX+sideW+20, winY+titleH+132)
+    dotRed.Position    = Vector2.new(winX+sideW+20, winY+titleH+148)
     local cx = winX+sideW+10; local cy = winY+titleH+10; local cw = winW-sideW-20
     moveRoundedRect(btn1Parts, cx, cy); moveRoundedRect(toggle1Parts, cx+cw-42, cy+10)
     moveRoundedRect(btn2Parts, cx, cy+52); moveRoundedRect(toggle2Parts, cx+cw-42, cy+62)
@@ -293,9 +302,10 @@ local function buildEspLabels()
         if fruitFolder then
             local fruitPart = fruitFolder:FindFirstChild("Fruit")
             if fruitPart and fruitPart:IsA("BasePart") then
+                local fruitName = (obj.Name ~= "Fruit" and obj.Name) or "Spawned Fruit"
                 local label = Drawing.new("Text")
-                label.Text = obj.Name; label.Position = Vector2.new(0,0)
-                label.Color = Color3.new(1,0,0); label.Size = 14; label.Outline = true
+                label.Text = fruitName; label.Position = Vector2.new(0,0)
+                label.Color = Color3.new(0, 1, 0); label.Size = 14; label.Outline = true
                 label.Visible = false; label.ZIndex = 10; label.Font = Drawing.Fonts.Monospace; label.Center = true
                 table.insert(espLabels, {label=label, part=fruitPart})
             end
