@@ -298,7 +298,7 @@ homeIdeasText.Color = accentColor; homeIdeasText.Size = 11
 homeIdeasText.Visible = true; homeIdeasText.ZIndex = 4; homeIdeasText.Font = Drawing.Fonts.Monospace
 
 
-local infoCard1    = makeRoundedRect(cx0, cy0, cw0, 120, 5, cardColor, 2)
+local infoCard1    = makeRoundedRect(cx0, cy0, cw0, 230, 5, cardColor, 2)
 local infoCard1Hdr = Drawing.new("Text")
 infoCard1Hdr.Text = "INFO"; infoCard1Hdr.Position = Vector2.new(cx0+10, cy0+6)
 infoCard1Hdr.Color = dimTextColor; infoCard1Hdr.Size = 11
@@ -315,6 +315,21 @@ infoFarmText.Text = "The auto farm level works in 1 sea\nand the submerged quest
 infoFarmText.Position = Vector2.new(cx0+10, cy0+68)
 infoFarmText.Color = Color3.new(1,0.85,0); infoFarmText.Size = 12
 infoFarmText.Visible = false; infoFarmText.ZIndex = 4; infoFarmText.Font = Drawing.Fonts.Monospace
+local infoTip1Text = Drawing.new("Text")
+infoTip1Text.Text = "Keep in mind the Auto Farm Level\nsometimes doesnt work cuz the\nquest giver model isnt loaded in"
+infoTip1Text.Position = Vector2.new(cx0+10, cy0+122)
+infoTip1Text.Color = Color3.new(1,0.5,0.3); infoTip1Text.Size = 12
+infoTip1Text.Visible = false; infoTip1Text.ZIndex = 4; infoTip1Text.Font = Drawing.Fonts.Monospace
+local infoTip2Text = Drawing.new("Text")
+infoTip2Text.Text = "For Auto Farm Chests to work u\nhave to load them in first same\nfor Auto Farm Nearest"
+infoTip2Text.Position = Vector2.new(cx0+10, cy0+164)
+infoTip2Text.Color = Color3.new(0.5,1,0.6); infoTip2Text.Size = 12
+infoTip2Text.Visible = false; infoTip2Text.ZIndex = 4; infoTip2Text.Font = Drawing.Fonts.Monospace
+local infoTip3Text = Drawing.new("Text")
+infoTip3Text.Text = "give me ideas for the pvp tab\nand more please dm @kktasus#8563"
+infoTip3Text.Position = Vector2.new(cx0+10, cy0+206)
+infoTip3Text.Color = Color3.new(0.7,0.5,1); infoTip3Text.Size = 12
+infoTip3Text.Visible = false; infoTip3Text.ZIndex = 4; infoTip3Text.Font = Drawing.Fonts.Monospace
 
 setVisible(infoCard1, false)
 
@@ -525,6 +540,7 @@ local function showPage(page)
 
     setVisible(infoCard1,false); infoCard1Hdr.Visible=false; infoCard1Sep.Visible=false
     infoEspText.Visible=false; infoFarmText.Visible=false
+    infoTip1Text.Visible=false; infoTip2Text.Visible=false; infoTip3Text.Visible=false
 
     tab0BadgeText.Color=Color3.new(0.6,0.7,0.7); tab0LabelText.Color=Color3.new(0.6,0.7,0.7)
     colorRoundedRect(tab0BadgeParts, Color3.new(0.15,0.18,0.19))
@@ -579,6 +595,7 @@ local function showPage(page)
     elseif page == "info" then
         setVisible(infoCard1,true); infoCard1Hdr.Visible=true; infoCard1Sep.Visible=true
         infoEspText.Visible=true; infoFarmText.Visible=true
+        infoTip1Text.Visible=true; infoTip2Text.Visible=true; infoTip3Text.Visible=true
         moveRoundedRect(sideHighlight, winX, winY+titleH+tab3OffY)
         tab3BadgeText.Color=Color3.new(1,1,1); tab3LabelText.Color=Color3.new(1,1,1)
         colorRoundedRect(tab3BadgeParts, Color3.new(0,0.35,0.18))
@@ -596,7 +613,7 @@ do
         homeCard1Hdr, homeWelcome1, homeWelcome2, homeWelcome3, homeWelcome4,
         homeCard3Hdr, detText1, detText2, detText3, detText4,
         homeIdeasText,
-        infoCard1Hdr, infoEspText, infoFarmText,
+        infoCard1Hdr, infoEspText, infoFarmText, infoTip1Text, infoTip2Text, infoTip3Text,
         pvpTitle, pvpCard1Hdr, pvpComingSoon1, pvpComingSoon2, pvpNote,
         featTitle,
         btn0Label, btn1Label, btn2Label, btn3Label, btn4Label, btn5Label, btn6Label,
@@ -672,6 +689,9 @@ local function updateAll()
     infoCard1Sep.From=Vector2.new(cx+6,cy+20); infoCard1Sep.To=Vector2.new(cx+cw-6,cy+20)
     infoEspText.Position=Vector2.new(cx+10,cy+25)
     infoFarmText.Position=Vector2.new(cx+10,cy+68)
+    infoTip1Text.Position=Vector2.new(cx+10,cy+122)
+    infoTip2Text.Position=Vector2.new(cx+10,cy+164)
+    infoTip3Text.Position=Vector2.new(cx+10,cy+206)
 
     featTitle.Position=Vector2.new(cx,cy)
     featSep.From=Vector2.new(cx,cy+20); featSep.To=Vector2.new(cx+cw,cy+20)
