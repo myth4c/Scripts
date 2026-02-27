@@ -306,7 +306,7 @@ infoCard1Hdr.Visible = false; infoCard1Hdr.ZIndex = 4; infoCard1Hdr.Font = Drawi
 local infoCard1Sep = makeLine(cx0+6, cy0+20, cx0+cw0-6, cy0+20, sepColor, 1, 3)
 infoCard1Sep.Visible = false
 local infoEspText = Drawing.new("Text")
-infoEspText.Text = "If Fruit ESP Says\nSpawned Fruit =\nSpawned / Fruit Notifier"
+infoEspText.Text = "If Fruit ESP Says Fruit that means\nthe fruit was\nSpawned / Fruit Notifier"
 infoEspText.Position = Vector2.new(cx0+10, cy0+25)
 infoEspText.Color = Color3.new(0.5,0.8,1); infoEspText.Size = 12
 infoEspText.Visible = false; infoEspText.ZIndex = 4; infoEspText.Font = Drawing.Fonts.Monospace
