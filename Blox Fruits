@@ -10,7 +10,7 @@ local titleH     = 48
 local sideW      = 130
 local RADIUS     = 6
 
--- ─── State ───────────────────────────────────────────────────
+
 local autoFarming     = false
 local fruitEsp        = false
 local chamEsp         = false
@@ -19,7 +19,7 @@ local autoTpFruit     = false
 local autoFarmNearest = false
 local autoNpcFarm     = false
 local autoFarmLevel   = false
-local farmLevelGen    = 0  -- increments every toggle, forces rescan
+local farmLevelGen    = 0
 local chamBoxes  = {}
 local chestIndex = 1
 local espLabels  = {}
@@ -32,7 +32,7 @@ local SPEED_STEP = 50
 
 
 
--- ─── NPC Farm / Island data ───────────────────────────────────
+
 local islandList = {
     {name="Tiki2",         pos=Vector3.new(-16577.81, 107.2,   1226.22)},
     {name="Tiki1",         pos=Vector3.new(-16546.72,  55.87,  -228.59)},
@@ -59,7 +59,7 @@ local DROP_ROW_H     = 18
 local DROP_W         = 130
 local ISLE_BOX_W     = 95
 
--- ─── Colors (Windy dark teal palette) ────────────────────────
+
 local bgColor         = Color3.new(0.06, 0.08, 0.09)
 local sideColor       = Color3.new(0.08, 0.10, 0.11)
 local sideActiveColor = Color3.new(0.0,  0.48, 0.24)
@@ -74,7 +74,7 @@ local sepColor        = Color3.new(0.13, 0.18, 0.19)
 local dropBgColor     = Color3.new(0.09, 0.12, 0.13)
 local dropHlColor     = Color3.new(0.0,  0.30, 0.15)
 
--- ─── Drawing helpers ─────────────────────────────────────────
+
 local function makeRoundedRect(ox, oy, w, h, radius, color, zi)
     local parts = {}
     local function addSq(dx, dy, sw, sh)
@@ -151,14 +151,14 @@ local function makeLine(x1, y1, x2, y2, color, thickness, zi)
     return l
 end
 
--- ─── Window frame ─────────────────────────────────────────────
+
 local windowParts  = makeRoundedRect(winX, winY, winW, winH, RADIUS, bgColor, 1)
 local titleBgParts = makeRoundedRectTop(winX, winY, winW, titleH, RADIUS, bgColor, 2)
 local sideParts    = makeRoundedRectBL(winX, winY+titleH, sideW, winH-titleH, RADIUS, sideColor, 2)
 local accentLine   = makeLine(winX, winY+titleH, winX+winW, winY+titleH, accentColor, 2, 3)
 local sideLine     = makeLine(winX+sideW, winY+titleH, winX+sideW, winY+winH, sepColor, 1, 3)
 
--- ─── Title bar ────────────────────────────────────────────────
+
 local titleText = Drawing.new("Text")
 titleText.Text = "Myth4c's Script"; titleText.Position = Vector2.new(winX+12, winY+7)
 titleText.Color = Color3.new(1,1,1); titleText.Size = 17
@@ -169,10 +169,10 @@ subtitleText.Text = "Blox Fruits Script"; subtitleText.Position = Vector2.new(wi
 subtitleText.Color = accentColor; subtitleText.Size = 11
 subtitleText.Visible = true; subtitleText.ZIndex = 4; subtitleText.Font = Drawing.Fonts.Monospace
 
--- ─── Sidebar active highlight ─────────────────────────────────
+
 local sideHighlight = makeRoundedRect(winX, winY+titleH, sideW, 44, 0, sideActiveColor, 3)
 
--- ─── Sidebar Tab 0: Home ──────────────────────────────────────
+
 local tab0BadgeParts = makeRoundedRect(winX+8, winY+titleH+12, 22, 20, 3, Color3.new(0,0.35,0.18), 4)
 local tab0BadgeText  = Drawing.new("Text")
 tab0BadgeText.Text = "H"; tab0BadgeText.Position = Vector2.new(winX+19, winY+titleH+21)
@@ -183,7 +183,7 @@ tab0LabelText.Text = "Home"; tab0LabelText.Position = Vector2.new(winX+36, winY+
 tab0LabelText.Color = Color3.new(1,1,1); tab0LabelText.Size = 13
 tab0LabelText.Visible = true; tab0LabelText.ZIndex = 5; tab0LabelText.Font = Drawing.Fonts.Monospace
 
--- ─── Sidebar Tab 1: Features ──────────────────────────────────
+
 local tab1BadgeParts = makeRoundedRect(winX+8, winY+titleH+56, 22, 20, 3, Color3.new(0.15,0.18,0.19), 4)
 local tab1BadgeText  = Drawing.new("Text")
 tab1BadgeText.Text = "F"; tab1BadgeText.Position = Vector2.new(winX+19, winY+titleH+65)
@@ -194,7 +194,7 @@ tab1LabelText.Text = "Features"; tab1LabelText.Position = Vector2.new(winX+36, w
 tab1LabelText.Color = Color3.new(0.6,0.7,0.7); tab1LabelText.Size = 13
 tab1LabelText.Visible = true; tab1LabelText.ZIndex = 5; tab1LabelText.Font = Drawing.Fonts.Monospace
 
--- ─── Sidebar Tab 2: PVP ───────────────────────────────────────
+
 local tab2BadgeParts = makeRoundedRect(winX+8, winY+titleH+100, 22, 20, 3, Color3.new(0.15,0.18,0.19), 4)
 local tab2BadgeText  = Drawing.new("Text")
 tab2BadgeText.Text = "P"; tab2BadgeText.Position = Vector2.new(winX+19, winY+titleH+109)
@@ -205,8 +205,8 @@ tab2LabelText.Text = "PVP"; tab2LabelText.Position = Vector2.new(winX+36, winY+t
 tab2LabelText.Color = Color3.new(0.6,0.7,0.7); tab2LabelText.Size = 13
 tab2LabelText.Visible = true; tab2LabelText.ZIndex = 5; tab2LabelText.Font = Drawing.Fonts.Monospace
 
--- ─── Sidebar Tab 3: Info (pinned to bottom of sidebar) ────────
-local tab3OffY = winH - titleH - 44  -- offset from top of sidebar
+
+local tab3OffY = winH - titleH - 44
 local tab3BadgeParts = makeRoundedRect(winX+8, winY+titleH+tab3OffY+12, 22, 20, 3, Color3.new(0.15,0.18,0.19), 4)
 local tab3BadgeText  = Drawing.new("Text")
 tab3BadgeText.Text = "I"; tab3BadgeText.Position = Vector2.new(winX+19, winY+titleH+tab3OffY+21)
@@ -217,13 +217,13 @@ tab3LabelText.Text = "Info"; tab3LabelText.Position = Vector2.new(winX+36, winY+
 tab3LabelText.Color = Color3.new(0.6,0.7,0.7); tab3LabelText.Size = 13
 tab3LabelText.Visible = true; tab3LabelText.ZIndex = 5; tab3LabelText.Font = Drawing.Fonts.Monospace
 
--- ─── Build-time content coords ────────────────────────────────
+
 local cx0  = winX+sideW+10
 local cy0  = winY+titleH+10
 local cw0  = winW-sideW-20
 local fcy0 = cy0+28
 
--- ─── HOME: Card 1 (STATUS) ────────────────────────────────────
+
 local homeCard1    = makeRoundedRect(cx0, cy0, cw0, 84, 5, cardColor, 2)
 local homeCard1Hdr = Drawing.new("Text")
 homeCard1Hdr.Text = "STATUS"; homeCard1Hdr.Position = Vector2.new(cx0+10, cy0+6)
@@ -251,7 +251,7 @@ homeWelcome4.Text = "Auto Farm Npc Feature from @zlxcyyyc"; homeWelcome4.Positio
 homeWelcome4.Color = dimTextColor; homeWelcome4.Size = 11
 homeWelcome4.Visible = true; homeWelcome4.ZIndex = 4; homeWelcome4.Font = Drawing.Fonts.Monospace
 
--- ─── HOME: Card 3 (DETECTION) ────────────────────────────────
+
 local homeCard3    = makeRoundedRect(cx0, cy0+92, cw0, 110, 5, cardColor, 2)
 local homeCard3Hdr = Drawing.new("Text")
 homeCard3Hdr.Text = "DETECTION"; homeCard3Hdr.Position = Vector2.new(cx0+10, cy0+98)
@@ -297,7 +297,7 @@ homeIdeasText.Position = Vector2.new(cx0+10, cy0+(winH-titleH-40))
 homeIdeasText.Color = accentColor; homeIdeasText.Size = 11
 homeIdeasText.Visible = true; homeIdeasText.ZIndex = 4; homeIdeasText.Font = Drawing.Fonts.Monospace
 
--- ─── INFO page ────────────────────────────────────────────────
+
 local infoCard1    = makeRoundedRect(cx0, cy0, cw0, 120, 5, cardColor, 2)
 local infoCard1Hdr = Drawing.new("Text")
 infoCard1Hdr.Text = "INFO"; infoCard1Hdr.Position = Vector2.new(cx0+10, cy0+6)
@@ -318,7 +318,7 @@ infoFarmText.Visible = false; infoFarmText.ZIndex = 4; infoFarmText.Font = Drawi
 
 setVisible(infoCard1, false)
 
--- ─── PVP page ─────────────────────────────────────────────────
+
 local pvpTitle = Drawing.new("Text")
 pvpTitle.Text = "PVP Settings"; pvpTitle.Position = Vector2.new(cx0, cy0)
 pvpTitle.Color = Color3.new(1,1,1); pvpTitle.Size = 16
@@ -353,7 +353,7 @@ pvpNote.Visible = false; pvpNote.ZIndex = 4; pvpNote.Font = Drawing.Fonts.Monosp
 
 setVisible(pvpCard1, false)
 
--- ─── FEATURES page ────────────────────────────────────────────
+
 local featTitle = Drawing.new("Text")
 featTitle.Text = "Feature Settings"; featTitle.Position = Vector2.new(cx0, cy0)
 featTitle.Color = Color3.new(1,1,1); featTitle.Size = 16
@@ -371,15 +371,15 @@ local btn3Parts    = makeRoundedRect(cx0, fcy0+102,   cw0, 28, 4, btnColor, 2)
 local toggle3Parts = makeRoundedRect(cx0+8, fcy0+108, 16, 16, 3, toggleOffColor, 3)
 local btn4Parts    = makeRoundedRect(cx0, fcy0+136,   cw0, 28, 4, btnColor, 2)
 local toggle4Parts = makeRoundedRect(cx0+8, fcy0+142, 16, 16, 3, toggleOffColor, 3)
--- btn5: Auto NPC Farm
+
 local btn5Parts      = makeRoundedRect(cx0, fcy0+170, cw0, 28, 4, btnColor, 2)
 local toggle5Parts   = makeRoundedRect(cx0+8, fcy0+176, 16, 16, 3, toggleOffColor, 3)
 local islandBoxParts = makeRoundedRect(cx0+cw0-ISLE_BOX_W-32, fcy0+174, ISLE_BOX_W, 20, 3, dropBgColor, 3)
 local dropArrowParts = makeRoundedRect(cx0+cw0-28, fcy0+174, 22, 20, 3, speedBtnColor, 4)
--- btn6: Auto Farm Level
+
 local btn6Parts    = makeRoundedRect(cx0, fcy0+204,   cw0, 28, 4, btnColor, 2)
 local toggle6Parts = makeRoundedRect(cx0+8, fcy0+210, 16, 16, 3, toggleOffColor, 3)
--- Speed row (shifted down by 34 to make room for btn6)
+
 local speedMinusParts = makeRoundedRect(cx0+cw0-64, fcy0+244, 24, 16, 3, speedBtnColor, 3)
 local speedPlusParts  = makeRoundedRect(cx0+cw0-34, fcy0+244, 24, 16, 3, speedBtnColor, 3)
 
@@ -453,7 +453,7 @@ speedPlusLabel.Color = Color3.new(0.4,1,0.4); speedPlusLabel.Size = 14
 speedPlusLabel.Visible = false; speedPlusLabel.ZIndex = 5
 speedPlusLabel.Font = Drawing.Fonts.Monospace; speedPlusLabel.Center = true
 
--- ─── Dropdown ─────────────────────────────────────────────────
+
 local dropX = cx0+cw0-6-DROP_W
 local dropY = fcy0+198
 local dropdownBgParts   = makeRoundedRect(dropX, dropY, DROP_W, DROP_N*DROP_ROW_H+4, 3, dropBgColor, 18)
@@ -483,11 +483,11 @@ setVisible(btn6Parts,false); setVisible(toggle6Parts,false)
 setVisible(islandBoxParts,false); setVisible(dropArrowParts,false)
 setVisible(speedMinusParts,false); setVisible(speedPlusParts,false)
 
--- ─── showPage ─────────────────────────────────────────────────
+
 local function showPage(page)
     currentPage = page
 
-    -- home
+
     setVisible(homeCard1,false); homeCard1Hdr.Visible=false; homeCard1Sep.Visible=false
     homeStatusDot.Visible=false; homeWelcome1.Visible=false; homeWelcome2.Visible=false
     homeWelcome3.Visible=false; homeWelcome4.Visible=false
@@ -498,7 +498,7 @@ local function showPage(page)
     dotRed.Visible=false; detText3.Visible=false
     dotOrange.Visible=false; detText4.Visible=false
     homeIdeasText.Visible=false
-    -- features
+
     featTitle.Visible=false; featSep.Visible=false
     setVisible(btn0Parts,false); setVisible(toggle0Parts,false)
     setVisible(btn1Parts,false); setVisible(toggle1Parts,false)
@@ -517,15 +517,15 @@ local function showPage(page)
     speedMinusLabel.Visible=false; speedPlusLabel.Visible=false
     dropdownOpen=false; setVisible(dropdownBgParts,false)
     for i=1,DROP_N do setVisible(dropRowHighlights[i],false); dropRowLabels[i].Visible=false end
-    -- pvp
+
     pvpTitle.Visible=false; pvpSep.Visible=false
     setVisible(pvpCard1,false); pvpCard1Hdr.Visible=false; pvpCard1Sep.Visible=false
     pvpComingSoonDot.Visible=false; pvpComingSoon1.Visible=false; pvpComingSoon2.Visible=false
     pvpNote.Visible=false
-    -- info
+
     setVisible(infoCard1,false); infoCard1Hdr.Visible=false; infoCard1Sep.Visible=false
     infoEspText.Visible=false; infoFarmText.Visible=false
-    -- reset badge colors
+
     tab0BadgeText.Color=Color3.new(0.6,0.7,0.7); tab0LabelText.Color=Color3.new(0.6,0.7,0.7)
     colorRoundedRect(tab0BadgeParts, Color3.new(0.15,0.18,0.19))
     tab1BadgeText.Color=Color3.new(0.6,0.7,0.7); tab1LabelText.Color=Color3.new(0.6,0.7,0.7)
@@ -585,7 +585,7 @@ local function showPage(page)
     end
 end
 
--- ─── Outline all text objects ────────────────────────────────
+
 do
     local allText = {
         titleText, subtitleText,
@@ -609,7 +609,7 @@ end
 
 showPage("home")
 
--- ─── updateAll ────────────────────────────────────────────────
+
 local function updateAll()
     local cx  = winX+sideW+10
     local cy  = winY+titleH+10
@@ -724,7 +724,7 @@ local function updateAll()
     end
 end
 
--- ─── Hit detection ────────────────────────────────────────────
+
 local function isInsideTitleBar(x,y)
     return x>=winX and x<=winX+winW and y>=winY and y<=winY+titleH
 end
@@ -792,7 +792,7 @@ local function getDropdownRowClick(x,y)
     return nil
 end
 
--- ─── Dropdown helpers ─────────────────────────────────────────
+
 local function openDropdown()
     dropdownOpen = true
     local cx=winX+sideW+10; local cw=winW-sideW-20; local fcy=winY+titleH+38
@@ -821,7 +821,7 @@ local function closeDropdown()
     dropArrowLabel.Text="v"
 end
 
--- ─── NPC Farm logic ───────────────────────────────────────────
+
 local NPC_TWEEN_SPEED = 250
 
 local function npcTweenTo(hrp, targetPos)
@@ -885,7 +885,7 @@ local function buildEspLabels()
     end
 end
 
--- ─── Movement helpers ─────────────────────────────────────────
+
 local CHEST_SPEED = 310
 local FRUIT_SPEED = 210
 
@@ -947,7 +947,7 @@ local function getNearestEnemy(hrp)
     return best
 end
 
--- ─── Game loops ───────────────────────────────────────────────
+
 local function teleportToChest(targetPart)
     local Character = LocalPlayer.Character; if not Character then return end
     local hrp = Character:FindFirstChild("HumanoidRootPart"); if not hrp then return end
@@ -1018,7 +1018,7 @@ task.spawn(function()
                         if dist <= 1000 then
                             notify("Found: "..target.Name,"Myth4c's Script",2)
 
-                            -- Lock direction from enemy toward player
+
                             local dirX = 0
                             local dirZ = 1
                             local ATTACK_DIST = 5
@@ -1105,7 +1105,7 @@ task.spawn(function()
                     local troot = target:FindFirstChild("HumanoidRootPart")
                     if not troot then task.wait(0.1) end; if not troot then break end
 
-                    -- Lock direction from enemy toward player
+
                     local dirX = 0
                     local dirZ = 1
                     local ATTACK_DIST = 5
@@ -1131,67 +1131,67 @@ task.spawn(function()
     end
 end)
 
--- ─── Quest data ───────────────────────────────────────────────
--- npcPos = where to tween to open the quest dialogue
--- questGroup = shared key for all quests at same NPC (used for Option selection)
+
+
+
 local questData = {
-    -- ── Sea 1 ─────────────────────────────────────────────────
-    -- NPC: Bandit Quest Giver (Pirate Starter Island)
+
+
     {minLvl=0,   maxLvl=9,   enemy="Bandit",              questGroup="BanditQuest1",   npcPos=Vector3.new(1058.99,  12.71,   1551.73),  questName="Bandits"},
-    -- NPC: Marine Leader (Marine Starter Island) — position unchanged
+
     {minLvl=0,   maxLvl=9,   enemy="Trainee",             questGroup="MarineQuest",    npcPos=Vector3.new(-2083.0,  13.0,    -11.0),    questName="Trainees"},
-    -- NPC: Adventurer (Jungle) — option1=Monkey, option2=Gorilla, option3=Gorilla King
+
     {minLvl=10,  maxLvl=14,  enemy="Monkey",              questGroup="JungleQuest",    npcPos=Vector3.new(-1598.09, 33.2,    153.38),   questName="Monkeys"},
     {minLvl=15,  maxLvl=19,  enemy="Gorilla",             questGroup="JungleQuest",    npcPos=Vector3.new(-1598.09, 33.2,    153.38),   questName="Gorillas"},
     {minLvl=20,  maxLvl=29,  enemy="The Gorilla King",    questGroup="JungleQuest",    npcPos=Vector3.new(-1598.09, 33.2,    153.38),   questName="Gorilla King"},
-    -- NPC: Pirate Adventurer (Pirate Village) — option1=Pirate, option2=Brute, option3=Chef
+
     {minLvl=30,  maxLvl=39,  enemy="Pirate",              questGroup="PirateVillage",  npcPos=Vector3.new(-1141.08, 1.1,     3831.55),  questName="Pirates"},
     {minLvl=40,  maxLvl=54,  enemy="Brute",               questGroup="PirateVillage",  npcPos=Vector3.new(-1141.08, 1.1,     3831.55),  questName="Brute"},
     {minLvl=55,  maxLvl=59,  enemy="Chef",                questGroup="PirateVillage",  npcPos=Vector3.new(-1141.08, 1.1,     3831.55),  questName="Chef"},
-    -- NPC: Desert Adventurer (Desert) — option1=Desert Bandit, option2=Desert Officer
+
     {minLvl=60,  maxLvl=74,  enemy="Desert Bandit",       questGroup="DesertQuest",    npcPos=Vector3.new(894.49,   2.79,    4392.43),  questName="Desert Bandit"},
     {minLvl=75,  maxLvl=89,  enemy="Desert Officer",      questGroup="DesertQuest",    npcPos=Vector3.new(894.49,   2.79,    4392.43),  questName="Desert Officer"},
-    -- NPC: Villager (Frozen Village) — option1=Snow Bandit, option2=Snowman, option3=Yeti
+
     {minLvl=90,  maxLvl=99,  enemy="Snow Bandit",         questGroup="SnowQuest",      npcPos=Vector3.new(1387.19,  83.62,   -1295.05), questName="Snow Bandit"},
     {minLvl=100, maxLvl=104, enemy="Snowman",             questGroup="SnowQuest",      npcPos=Vector3.new(1387.19,  83.62,   -1295.05), questName="Snowman"},
     {minLvl=105, maxLvl=119, enemy="Yeti",                questGroup="SnowQuest",      npcPos=Vector3.new(1387.19,  83.62,   -1295.05), questName="Yeti"},
-    -- NPC: Marine (Marine Fortress) — option1=Chief Petty Officer, option2=Vice Admiral
+
     {minLvl=120, maxLvl=129, enemy="Chief Petty Officer", questGroup="MarineQuest2",   npcPos=Vector3.new(-5039.59, 25.0,    4324.68),  questName="Chief Petty Officer"},
     {minLvl=130, maxLvl=149, enemy="Vice Admiral",        questGroup="MarineQuest2",   npcPos=Vector3.new(-5039.59, 25.0,    4324.68),  questName="Vice Admiral"},
-    -- NPC: Sky Adventurer (Skylands) — option1=Sky Bandit, option2=Dark Master
+
     {minLvl=150, maxLvl=174, enemy="Sky Bandit",          questGroup="SkyQuest",       npcPos=Vector3.new(-4839.53, 714.02,  -2619.44), questName="Sky Bandit"},
     {minLvl=175, maxLvl=189, enemy="Dark Master",         questGroup="SkyQuest",       npcPos=Vector3.new(-4839.53, 714.02,  -2619.44), questName="Dark Master"},
-    -- NPC: Jail Keeper (Prison) — option1=Prisoner, option2=Dangerous Prisoner
+
     {minLvl=190, maxLvl=209, enemy="Prisoner",            questGroup="PrisonerQuest",  npcPos=Vector3.new(5310.61,  -2.0,    474.95),   questName="Prisoner"},
     {minLvl=210, maxLvl=219, enemy="Dangerous Prisoner",  questGroup="PrisonerQuest",  npcPos=Vector3.new(5310.61,  -2.0,    474.95),   questName="Dangerous Prisoner"},
-    -- NPC: Head Jailer (Prison) — option1=Warden, option2=Chief Warden, option3=Swan
+
     {minLvl=220, maxLvl=229, enemy="Warden",              questGroup="ImpelQuest",     npcPos=Vector3.new(5191.86,  -0.11,   686.44),   questName="Warden"},
     {minLvl=230, maxLvl=239, enemy="Chief Warden",        questGroup="ImpelQuest",     npcPos=Vector3.new(5191.86,  -0.11,   686.44),   questName="Chief Warden"},
     {minLvl=240, maxLvl=249, enemy="Swan",                questGroup="ImpelQuest",     npcPos=Vector3.new(5191.86,  -0.11,   686.44),   questName="Swan"},
-    -- NPC: Colosseum Quest Giver — option1=Toga Warrior, option2=Gladiator
+
     {minLvl=250, maxLvl=274, enemy="Toga Warrior",        questGroup="ColosseumQuest", npcPos=Vector3.new(-1580.05, 3.74,    -2986.48), questName="Toga Warrior"},
     {minLvl=275, maxLvl=299, enemy="Gladiator",           questGroup="ColosseumQuest", npcPos=Vector3.new(-1580.05, 3.74,    -2986.48), questName="Gladiator"},
-    -- NPC: The Mayor (Magma Village) — option1=Military Soldier, option2=Military Spy, option3=Magma Admiral
+
     {minLvl=300, maxLvl=324, enemy="Military Soldier",    questGroup="MagmaQuest",     npcPos=Vector3.new(-5313.37, 8.58,    8515.29),  questName="Mil. Soldier"},
     {minLvl=325, maxLvl=349, enemy="Military Spy",        questGroup="MagmaQuest",     npcPos=Vector3.new(-5313.37, 8.58,    8515.29),  questName="Mil. Spy"},
     {minLvl=350, maxLvl=374, enemy="Magma Admiral",       questGroup="MagmaQuest",     npcPos=Vector3.new(-5313.37, 8.58,    8515.29),  questName="Magma Admiral"},
-    -- NPC: King Neptune (Underwater City) — option1=Fishman Warrior, option2=Fishman Commando, option3=Fishman Lord
+
     {minLvl=375, maxLvl=399, enemy="Fishman Warrior",     questGroup="FishmanQuest",   npcPos=Vector3.new(61121.11, 14.82,   1564.53),  questName="Fishman Warrior"},
     {minLvl=400, maxLvl=424, enemy="Fishman Commando",    questGroup="FishmanQuest",   npcPos=Vector3.new(61121.11, 14.82,   1564.53),  questName="Fishman Commando"},
     {minLvl=425, maxLvl=449, enemy="Fishman Lord",        questGroup="FishmanQuest",   npcPos=Vector3.new(61121.11, 14.82,   1564.53),  questName="Fishman Lord"},
-    -- NPC: Mole #2 (Upper Skylands, Y=5541) — option1=God's Guard, option2=Shanda, option3=Wysper
+
     {minLvl=450, maxLvl=474, enemy="God's Guard",         questGroup="SkyExp1Quest",   npcPos=Vector3.new(-7859.1,  5541.84, -381.48),  questName="God's Guard"},
     {minLvl=475, maxLvl=499, enemy="Shanda",              questGroup="SkyExp1Quest",   npcPos=Vector3.new(-7859.1,  5541.84, -381.48),  questName="Shanda"},
     {minLvl=500, maxLvl=524, enemy="Wysper",              questGroup="SkyExp1Quest",   npcPos=Vector3.new(-7859.1,  5541.84, -381.48),  questName="Wysper"},
-    -- NPC: Sky Quest Giver 2 (Upper Skylands) — option1=Royal Squad, option2=Royal Soldier, option3=Thunder God
+
     {minLvl=525, maxLvl=549, enemy="Royal Squad",         questGroup="SkyExp2Quest",   npcPos=Vector3.new(-7904.69, 5632.31, -1409.97), questName="Royal Squad"},
     {minLvl=550, maxLvl=574, enemy="Royal Soldier",       questGroup="SkyExp2Quest",   npcPos=Vector3.new(-7904.69, 5632.31, -1409.97), questName="Royal Soldier"},
     {minLvl=575, maxLvl=624, enemy="Thunder God",         questGroup="SkyExp2Quest",   npcPos=Vector3.new(-7904.69, 5632.31, -1409.97), questName="Thunder God"},
-    -- NPC: Freezeburg Quest Giver (Fountain City) — option1=Galley Pirate, option2=Galley Captain, option3=Cyborg
+
     {minLvl=625, maxLvl=649, enemy="Galley Pirate",       questGroup="FountainQuest",  npcPos=Vector3.new(5259.82,  34.85,   4050.03),  questName="Galley Pirate"},
     {minLvl=650, maxLvl=674, enemy="Galley Captain",      questGroup="FountainQuest",  npcPos=Vector3.new(5259.82,  34.85,   4050.03),  questName="Galley Captain"},
     {minLvl=675, maxLvl=699, enemy="Cyborg",              questGroup="FountainQuest",  npcPos=Vector3.new(5259.82,  34.85,   4050.03),  questName="Cyborg"},
-    -- ── Sea 2 ─────────────────────────────────────────────────
+
     {minLvl=700, maxLvl=724, enemy="Raider",              questGroup="Area1Quest",     npcPos=Vector3.new(-10810.0, 391.0, -9760.0), questName="Raider"},
     {minLvl=725, maxLvl=749, enemy="Mercenary",           questGroup="Area1Quest",     npcPos=Vector3.new(-10810.0, 391.0, -9760.0), questName="Mercenary"},
     {minLvl=750, maxLvl=774, enemy="Diamond",             questGroup="Area1Quest",     npcPos=Vector3.new(-10810.0, 391.0, -9760.0), questName="Diamond"},
@@ -1201,7 +1201,7 @@ local questData = {
     {minLvl=900, maxLvl=924, enemy="Marine Captain",      questGroup="MarineQuest3",   npcPos=Vector3.new(-13000.0, 395.0, -8800.0), questName="Marine Captain"},
     {minLvl=950, maxLvl=974, enemy="Zombie",              questGroup="ZombieQuest",    npcPos=Vector3.new(-9558.96, 172.28, 6139.46), questName="Zombie"},
     {minLvl=975, maxLvl=999, enemy="Vampire",             questGroup="ZombieQuest",    npcPos=Vector3.new(-9558.96, 172.28, 6139.46), questName="Vampire"},
-    -- ── Sea 3 ─────────────────────────────────────────────────
+
     {minLvl=1975, maxLvl=1999, enemy="Reborn Skeleton",       questGroup="HauntedQuest1",      npcPos=Vector3.new(-9558.96, 172.28, 6139.46),  questName="Reborn Skeleton"},
     {minLvl=2000, maxLvl=2024, enemy="Living Zombie",         questGroup="HauntedQuest1",      npcPos=Vector3.new(-9558.96, 172.28, 6139.46),  questName="Living Zombie"},
     {minLvl=2075, maxLvl=2099, enemy="Peanut Scout",          questGroup="NutsIslandQuest",    npcPos=Vector3.new(-2093.83, 38.28, -10204.63), questName="Peanut Scout"},
@@ -1223,7 +1223,7 @@ local questData = {
     {minLvl=2700, maxLvl=2799, enemy="Grand Devotee",         questGroup="SubmergedQuest3",    npcPos=Vector3.new(9637.29,  -1993.14, 9616.30),  questName="Grand Devotee"},
 }
 
--- Helper: get current player level
+
 local function getPlayerLevel()
     local ok, val = pcall(function()
         local txt = LocalPlayer.PlayerGui.Main.Level.Text
@@ -1233,12 +1233,12 @@ local function getPlayerLevel()
     return 0
 end
 
--- Helper: find matching quest for current level
+
 local function getQuestForLevel(lvl)
     local best = nil
     for _, q in pairs(questData) do
         if lvl >= q.minLvl and lvl <= q.maxLvl then
-            -- prefer highest minLvl match
+
             if best == nil or q.minLvl > best.minLvl then
                 best = q
             end
@@ -1247,7 +1247,7 @@ local function getQuestForLevel(lvl)
     return best
 end
 
--- Helper: find enemy in Workspace.Enemies matching name
+
 local function findEnemyByName(name)
     local folder = game.Workspace:FindFirstChild("Enemies")
     if not folder then return nil end
@@ -1268,7 +1268,7 @@ local function findEnemyByName(name)
     return best
 end
 
--- Helper: click quest text label in ScreenGui that contains questName
+
 local function clickQuestInGui(questName)
     local function searchGui(parent, targetText)
         for _, child in pairs(parent:GetChildren()) do
@@ -1293,11 +1293,11 @@ local function clickQuestInGui(questName)
     if screenGui then searchGui(screenGui, questName) end
 end
 
--- ─── Auto Farm Level loop ────────────────────────────────────
-local questAccepted = false  -- skip NPC tween if quest already running
 
--- Returns true if a quest is currently active (title text exists and is non-empty)
--- Returns false when the title disappears or errors = quest done / no quest
+local questAccepted = false
+
+
+
 local function isQuestActive()
     local ok, txt = pcall(function()
         return game.Players.aimbotbetters3000.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text
@@ -1316,7 +1316,7 @@ task.spawn(function()
         local hrp = Character and Character:FindFirstChild("HumanoidRootPart")
         if not hrp then task.wait(0.5); continue end
 
-        -- Check compass — if quest is still active skip straight to farming
+
         if isQuestActive() then
             questAccepted = true
         end
@@ -1329,7 +1329,7 @@ task.spawn(function()
             continue
         end
 
-        -- 1. Tween to quest NPC only if quest not yet accepted
+
         if not questAccepted then
             notify("Going to: "..quest.questName,"Myth4c's Script",2)
             local qpos = quest.npcPos
@@ -1349,7 +1349,7 @@ task.spawn(function()
 
             if not autoFarmLevel or farmLevelGen~=myGen then questAccepted=false; continue end
 
-            -- 2. Wait 2 secs then m1 click NPC to open dialogue
+
             task.wait(2)
             mouse1click()
             task.wait(2)
@@ -1412,9 +1412,9 @@ task.spawn(function()
             notify("Farming: "..quest.enemy,"Myth4c's Script",2)
         end
 
-        -- 3. Farm enemies — keep going until compass disappears (quest complete)
+
         while autoFarmLevel and farmLevelGen==myGen do
-            -- Compass gone = quest finished, go re-accept
+
             if not isQuestActive() then
                 notify("Quest complete! Re-accepting...","Myth4c's Script",3)
                 questAccepted = false
@@ -1424,7 +1424,7 @@ task.spawn(function()
             local hrp2 = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if not hrp2 then task.wait(0.5); break end
 
-            -- Find closest enemy by name
+
             local target = nil
             local bestDist = math.huge
             local folder = game.Workspace:FindFirstChild("Enemies")
@@ -1455,7 +1455,7 @@ task.spawn(function()
             local dirZ = 1
             local ATTACK_DIST = 5
 
-            -- Move next to enemy
+
             local tp = Vector3.new(troot.Position.X + dirX*ATTACK_DIST, troot.Position.Y+2, troot.Position.Z + dirZ*ATTACK_DIST)
             local sp2 = hrp2.Position
             local ex=tp.X-sp2.X; local ey=tp.Y-sp2.Y; local ez=tp.Z-sp2.Z
@@ -1473,20 +1473,20 @@ task.spawn(function()
 
             if not autoFarmLevel or farmLevelGen~=myGen then break end
 
-            -- Attack until dead
+
             local lastClick = 0
             while autoFarmLevel and farmLevelGen==myGen and isAlive(target) do
-                -- Death check: if our humanoid is gone or health=0, wait for respawn then re-engage
+
                 local myHum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
                 if not myHum or myHum.Health <= 0 then
                     notify("Died! Waiting for respawn...","Myth4c's Script",2)
-                    -- Wait until we have a fresh character with full health
+
                     repeat task.wait(0.2)
                         local c = LocalPlayer.Character
                         myHum = c and c:FindFirstChildOfClass("Humanoid")
                     until myHum and myHum.Health > 0
-                    task.wait(1) -- small buffer after respawn
-                    -- Re-grab hrp2 from new character and tween back to enemy
+                    task.wait(1)
+
                     hrp2 = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                     if not hrp2 then break end
                     local tr2 = target:FindFirstChild("HumanoidRootPart")
@@ -1520,7 +1520,7 @@ task.spawn(function()
             pcall(function() target:Destroy() end)
         end
 
-        -- If toggled off/on (gen changed), reset questAccepted so it re-does NPC tween
+
         if farmLevelGen ~= myGen then
             questAccepted = false
         end
@@ -1586,7 +1586,7 @@ task.spawn(function()
     end
 end)
 
--- ─── Input loop ───────────────────────────────────────────────
+
 task.spawn(function()
     local dragging=false; local dragOffX,dragOffY=0,0; local wasPressed=false
     while true do
@@ -1660,5 +1660,3 @@ task.spawn(function()
         wasPressed=pressing; task.wait(0.01)
     end
 end)
-
--- (no scroll needed — all islands shown at once)
