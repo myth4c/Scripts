@@ -233,6 +233,42 @@ Window:AddToggle("pull_enemies", {
     Callback = function(value)
         pullEnemies = value
         notify(value and "Pull Enemies ON!" or "Pull Enemies OFF!", "Myth4c's Script", 2)
+        if value then
+            -- One-time wake-up: tween to each enemy to trigger server interaction
+            task.spawn(function()
+                local Character = LocalPlayer.Character
+                local myHrp = Character and Character:FindFirstChild("HumanoidRootPart")
+                if not myHrp then return end
+                local folder = game.Workspace:FindFirstChild("Enemies")
+                if not folder then return end
+                for _, model in pairs(folder:GetChildren()) do
+                    if not pullEnemies then break end
+                    if model:IsA("Model") then
+                        local hrp = model:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            local dx = hrp.Position.X - myHrp.Position.X
+                            local dy = hrp.Position.Y - myHrp.Position.Y
+                            local dz = hrp.Position.Z - myHrp.Position.Z
+                            local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+                            if dist <= 100 then
+                                local startPos = myHrp.Position
+                                local dur = dist / FARM_SPEED
+                                local t0 = os.clock()
+                                while pullEnemies do
+                                    local a = math.min((os.clock() - t0) / dur, 1)
+                                    myHrp.Position = Vector3.new(startPos.X + dx*a, startPos.Y + dy*a, startPos.Z + dz*a)
+                                    myHrp.Velocity = Vector3.new(0, 0, 0)
+                                    myHrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                    if a >= 1 then break end
+                                    task.wait()
+                                end
+                                task.wait(0.05)
+                            end
+                        end
+                    end
+                end
+            end)
+        end
     end
 })
 
@@ -396,6 +432,64 @@ local function getNearestEnemy(hrp)
     return best
 end
 
+
+local function farmAttack(hrp, checkFn, enemyName)
+    local folder = game.Workspace:FindFirstChild("Enemies")
+    if not folder then return end
+
+    -- Find nearest enemy
+    local nearest, nearestRoot, bestDist = nil, nil, math.huge
+    for _, model in pairs(folder:GetChildren()) do
+        if model:IsA("Model") and isAlive(model) then
+            if not enemyName or model.Name == enemyName then
+                local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildOfClass("BasePart")
+                if root then
+                    local dx = root.Position.X - hrp.Position.X
+                    local dy = root.Position.Y - hrp.Position.Y
+                    local dz = root.Position.Z - hrp.Position.Z
+                    local d = math.sqrt(dx*dx + dy*dy + dz*dz)
+                    if d < bestDist then bestDist = d; nearest = model; nearestRoot = root end
+                end
+            end
+        end
+    end
+    if not nearest then return end
+
+    -- Expand hitbox and keep re-expanding every 1 second
+    local chest = nearest:FindFirstChild("UpperTorso") or nearest:FindFirstChild("Torso")
+    if chest then chest.Size = Vector3.new(10, 50, 10) end
+    task.spawn(function()
+        while checkFn() and isAlive(nearest) do
+            local c = nearest:FindFirstChild("UpperTorso") or nearest:FindFirstChild("Torso")
+            if c then c.Size = Vector3.new(10, 50, 10) end
+            task.wait(1)
+        end
+    end)
+
+    -- Orbit around enemy: 15 studs away, 30 studs above
+    local ORBIT_RADIUS = 10
+    local ORBIT_HEIGHT = 15
+    local ORBIT_SPEED  = 2  -- radians per second
+    local angle = 0
+    local lastClick = 0
+
+    while checkFn() and isAlive(nearest) do
+        local tr = nearest:FindFirstChild("HumanoidRootPart") or nearest:FindFirstChildOfClass("BasePart")
+        if tr then
+            local ex = tr.Position.X + math.cos(angle) * ORBIT_RADIUS
+            local ey = tr.Position.Y + ORBIT_HEIGHT
+            local ez = tr.Position.Z + math.sin(angle) * ORBIT_RADIUS
+            hrp.Position = Vector3.new(ex, ey, ez)
+            hrp.Velocity = Vector3.new(0, 0, 0)
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            angle = angle + ORBIT_SPEED * 0.016
+        end
+        local now = os.clock()
+        if now - lastClick >= 0.06 then mouse1click(); lastClick = now end
+        task.wait()
+    end
+end
+
 local function teleportToChest(targetPart)
     local Character = LocalPlayer.Character; if not Character then return end
     local hrp = Character:FindFirstChild("HumanoidRootPart"); if not hrp then return end
@@ -457,29 +551,7 @@ task.spawn(function()
             local Character = LocalPlayer.Character
             local hrp = Character and Character:FindFirstChild("HumanoidRootPart")
             if hrp then
-                local target = getNearestEnemy(hrp)
-                if target then
-                    local root = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChildOfClass("BasePart")
-                    if root then
-                        local dx=root.Position.X-hrp.Position.X; local dy=root.Position.Y-hrp.Position.Y; local dz=root.Position.Z-hrp.Position.Z
-                        local dist=math.sqrt(dx*dx+dy*dy+dz*dz)
-                        if dist <= 1000 then
-                            notify("Found: "..target.Name,"Myth4c's Script",2)
-                            local dirX = 0; local dirZ = 1; local ATTACK_DIST = 5
-                            if dist > 10 then farmTweenTo(hrp, Vector3.new(root.Position.X + dirX*ATTACK_DIST, root.Position.Y+2, root.Position.Z + dirZ*ATTACK_DIST)) end
-                            local lastClick=0
-                            while autoFarmNearest and isAlive(target) do
-                                local r2 = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChildOfClass("BasePart")
-                                if r2 then
-                                    hrp.Position=Vector3.new(r2.Position.X + dirX*ATTACK_DIST, r2.Position.Y+2, r2.Position.Z + dirZ*ATTACK_DIST)
-                                    hrp.Velocity=Vector3.new(0,0,0); hrp.AssemblyLinearVelocity=Vector3.new(0,0,0)
-                                end
-                                local now=os.clock(); if now-lastClick>=0.06 then mouse1click(); lastClick=now end
-                                task.wait()
-                            end
-                        end
-                    end
-                end
+                farmAttack(hrp, function() return autoFarmNearest end, nil)
             end
             task.wait(0.1)
         else task.wait(0.1) end
@@ -533,35 +605,9 @@ task.spawn(function()
                 end
                 while autoNpcFarm do
                     local hrp2 = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if not hrp2 then task.wait(0.1) end; if not hrp2 then break end
-                    local enemyFolder = game.Workspace:FindFirstChild("Enemies")
-                    local target = nil
-                    if enemyFolder then
-                        for _, child in pairs(enemyFolder:GetChildren()) do
-                            if child:IsA("Model") and isAlive(child) then
-                                local root = child:FindFirstChild("HumanoidRootPart")
-                                if root then target = child; break end
-                            end
-                        end
-                    end
-                    if not target then task.wait(0.5); break end
-                    local troot = target:FindFirstChild("HumanoidRootPart")
-                    if not troot then task.wait(0.1) end; if not troot then break end
-                    local dirX = 0; local dirZ = 1; local ATTACK_DIST = 5
-                    npcTweenTo(hrp2, Vector3.new(troot.Position.X + dirX*ATTACK_DIST, troot.Position.Y, troot.Position.Z + dirZ*ATTACK_DIST))
-                    if not autoNpcFarm then break end
-                    local lastClick = 0
-                    while autoNpcFarm and isAlive(target) do
-                        local tr2 = target:FindFirstChild("HumanoidRootPart")
-                        if tr2 then
-                            hrp2.Position = Vector3.new(tr2.Position.X + dirX*ATTACK_DIST, tr2.Position.Y, tr2.Position.Z + dirZ*ATTACK_DIST)
-                            hrp2.Velocity = Vector3.new(0,0,0); hrp2.AssemblyLinearVelocity = Vector3.new(0,0,0)
-                        end
-                        local now = os.clock()
-                        if now-lastClick >= 0.06 then mouse1click(); lastClick=now end
-                        task.wait()
-                    end
-                    pcall(function() target:Destroy() end)
+                    if not hrp2 then task.wait(0.1); break end
+                    farmAttack(hrp2, function() return autoNpcFarm end, nil)
+                    task.wait(0.1)
                 end
             end
             task.wait(0.1)
@@ -734,75 +780,8 @@ task.spawn(function()
             if not isQuestActive() then notify("Quest complete! Re-accepting...","Myth4c's Script",3); questAccepted=false; break end
             local hrp2 = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if not hrp2 then task.wait(0.5); break end
-            local target = nil; local bestDist = math.huge
-            local folder = game.Workspace:FindFirstChild("Enemies")
-            if folder then
-                for _, model in pairs(folder:GetChildren()) do
-                    if model:IsA("Model") and model.Name == quest.enemy and isAlive(model) then
-                        local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildOfClass("BasePart")
-                        if root and hrp2 then
-                            local dx=root.Position.X-hrp2.Position.X; local dy=root.Position.Y-hrp2.Position.Y; local dz=root.Position.Z-hrp2.Position.Z
-                            local d=math.sqrt(dx*dx+dy*dy+dz*dz)
-                            if d < bestDist then bestDist=d; target=model end
-                        end
-                    end
-                end
-            end
-            if not target then task.wait(1); continue end
-            local troot = target:FindFirstChild("HumanoidRootPart")
-            if not troot then task.wait(0.1); continue end
-            local dirX=0; local dirZ=1; local ATTACK_DIST=5
-            local tp = Vector3.new(troot.Position.X+dirX*ATTACK_DIST, troot.Position.Y+2, troot.Position.Z+dirZ*ATTACK_DIST)
-            local sp2 = hrp2.Position
-            local ex=tp.X-sp2.X; local ey=tp.Y-sp2.Y; local ez=tp.Z-sp2.Z
-            local ed = math.sqrt(ex*ex+ey*ey+ez*ez)
-            if ed > 8 then
-                local et0=os.clock(); local edur=ed/FARM_SPEED
-                while autoFarmLevel and farmLevelGen==myGen and isAlive(target) do
-                    local a=math.min((os.clock()-et0)/edur,1)
-                    hrp2.Position=Vector3.new(sp2.X+ex*a,sp2.Y+ey*a,sp2.Z+ez*a)
-                    hrp2.Velocity=Vector3.new(0,0,0); hrp2.AssemblyLinearVelocity=Vector3.new(0,0,0)
-                    if a>=1 then break end; task.wait()
-                end
-            end
-            if not autoFarmLevel or farmLevelGen~=myGen then break end
-            local lastClick = 0
-            while autoFarmLevel and farmLevelGen==myGen and isAlive(target) do
-                local myHum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if not myHum or myHum.Health <= 0 then
-                    notify("Died! Waiting for respawn...","Myth4c's Script",2)
-                    repeat task.wait(0.2); local c=LocalPlayer.Character; myHum=c and c:FindFirstChildOfClass("Humanoid") until myHum and myHum.Health > 0
-                    task.wait(1)
-                    hrp2 = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if not hrp2 then break end
-                    local tr2 = target:FindFirstChild("HumanoidRootPart")
-                    if tr2 and isAlive(target) then
-                        notify("Respawned! Going back to "..target.Name,"Myth4c's Script",2)
-                        local rx=tr2.Position.X+dirX*ATTACK_DIST; local ry2=tr2.Position.Y+2; local rz=tr2.Position.Z+dirZ*ATTACK_DIST
-                        local rsp=hrp2.Position; local rdx=rx-rsp.X; local rdy=ry2-rsp.Y; local rdz=rz-rsp.Z
-                        local rd=math.sqrt(rdx*rdx+rdy*rdy+rdz*rdz)
-                        if rd > 8 then
-                            local rt0=os.clock(); local rdur=rd/FARM_SPEED
-                            while autoFarmLevel and farmLevelGen==myGen and isAlive(target) do
-                                local a=math.min((os.clock()-rt0)/rdur,1)
-                                hrp2.Position=Vector3.new(rsp.X+rdx*a,rsp.Y+rdy*a,rsp.Z+rdz*a)
-                                hrp2.Velocity=Vector3.new(0,0,0); hrp2.AssemblyLinearVelocity=Vector3.new(0,0,0)
-                                if a>=1 then break end; task.wait()
-                            end
-                        end
-                    end
-                    lastClick = 0
-                end
-                local tr2 = target:FindFirstChild("HumanoidRootPart")
-                if tr2 then
-                    hrp2.Position=Vector3.new(tr2.Position.X+dirX*ATTACK_DIST, tr2.Position.Y+2, tr2.Position.Z+dirZ*ATTACK_DIST)
-                    hrp2.Velocity=Vector3.new(0,0,0); hrp2.AssemblyLinearVelocity=Vector3.new(0,0,0)
-                end
-                local now=os.clock()
-                if now-lastClick>=0.06 then mouse1click(); lastClick=now end
-                task.wait()
-            end
-            pcall(function() target:Destroy() end)
+            farmAttack(hrp2, function() return autoFarmLevel and farmLevelGen==myGen end, quest.enemy)
+            task.wait(0.1)
         end
         if farmLevelGen ~= myGen then questAccepted = false end
         task.wait(0.1)
@@ -893,7 +872,7 @@ task.spawn(function()
             local Character = LocalPlayer.Character
             local myHrp = Character and Character:FindFirstChild("HumanoidRootPart")
             if myHrp then
-                local pullPoint = Vector3.new(myHrp.Position.X, myHrp.Position.Y - 15, myHrp.Position.Z)
+                local pullPoint = Vector3.new(myHrp.Position.X, myHrp.Position.Y - 3, myHrp.Position.Z)
                 local folder = game.Workspace:FindFirstChild("Enemies")
                 if folder then
                     for _, model in pairs(folder:GetChildren()) do
@@ -910,7 +889,7 @@ task.spawn(function()
                 end
             end
         end
-        task.wait()
+        task.wait(0.001)
     end
 end)
 
