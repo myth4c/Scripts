@@ -13,6 +13,8 @@ local autoFarmNearest = false
 local autoNpcFarm     = false
 local autoFarmLevel   = false
 local farmLevelGen    = 0
+local bigHitbox       = false
+local pullEnemies     = false
 local chamBoxes  = {}
 local chestIndex = 1
 local espLabels  = {}
@@ -205,6 +207,32 @@ Window:AddToggle("auto_farm_level", {
         autoFarmLevel = value
         farmLevelGen = farmLevelGen + 1
         notify(value and "Auto Farm Level ON!" or "Auto Farm Level OFF!", "Myth4c's Script", 2)
+    end
+})
+
+Window:AddSection("Combat", { Column = 1 })
+
+Window:AddToggle("big_hitbox", {
+    Text = "Big Hitbox",
+    Description = "Expands enemy HumanoidRootPart size for easier hits",
+    Default = false,
+    Keybind = true,
+    Column = 1,
+    Callback = function(value)
+        bigHitbox = value
+        notify(value and "Big Hitbox ON!" or "Big Hitbox OFF!", "Myth4c's Script", 2)
+    end
+})
+
+Window:AddToggle("pull_enemies", {
+    Text = "Pull Enemies",
+    Description = "Pulls all enemies to one point under you",
+    Default = false,
+    Keybind = true,
+    Column = 1,
+    Callback = function(value)
+        pullEnemies = value
+        notify(value and "Pull Enemies ON!" or "Pull Enemies OFF!", "Myth4c's Script", 2)
     end
 })
 
@@ -835,6 +863,54 @@ task.spawn(function()
             end
         end
         task.wait(0.05)
+    end
+end)
+
+-- Big Hitbox loop
+task.spawn(function()
+    while true do
+        if bigHitbox then
+            local folder = game.Workspace:FindFirstChild("Enemies")
+            if folder then
+                for _, model in pairs(folder:GetChildren()) do
+                    if model:IsA("Model") then
+                        local chest = model:FindFirstChild("UpperTorso") or model:FindFirstChild("Torso")
+                        if chest then
+                            chest.Size = Vector3.new(2, 150, 1)
+                        end
+                    end
+                end
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- Pull Enemies loop
+task.spawn(function()
+    while true do
+        if pullEnemies then
+            local Character = LocalPlayer.Character
+            local myHrp = Character and Character:FindFirstChild("HumanoidRootPart")
+            if myHrp then
+                local pullPoint = Vector3.new(myHrp.Position.X, myHrp.Position.Y - 15, myHrp.Position.Z)
+                local folder = game.Workspace:FindFirstChild("Enemies")
+                if folder then
+                    for _, model in pairs(folder:GetChildren()) do
+                        if model:IsA("Model") then
+                            task.spawn(function()
+                                local hrp = model:FindFirstChild("HumanoidRootPart")
+                                if hrp then
+                                    hrp.CanCollide = false
+                                    hrp.Position = pullPoint
+                                end
+                            end)
+                        end
+                    end
+                end
+            end
+        end
+        task.wait()
     end
 end)
 
