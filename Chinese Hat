@@ -1,0 +1,94 @@
+local Players = game:GetService('Players')
+
+local _lp = Players.LocalPlayer
+if not _lp then repeat wait(0.1); _lp = Players.LocalPlayer until _lp end
+local MY_NAME = _lp.Name
+
+-- ── Config (falls back to defaults if _G.ConeHat not set) ──
+local cfg = _G.ConeHat or {}
+
+local FPS        = cfg.FPS        or 60
+local SEGMENTS   = cfg.SEGMENTS   or 24
+local HAT_RADIUS = cfg.HAT_RADIUS or 1.8
+local HAT_HEIGHT = cfg.HAT_HEIGHT or 1.3
+local HAT_Y      = cfg.HAT_Y      or 0.6
+local COL_CONE   = cfg.COL_CONE   or Color3.new(0, 0, 0)
+local Z_CONE     = cfg.Z_CONE     or 5
+
+local REFRESH_RATE = FPS == 0 and 0 or 1 / FPS
+
+local coneTriangles = {}
+
+local function newTri(color, zindex)
+    local t = Drawing.new('Triangle')
+    t.Color   = color
+    t.Filled  = true
+    t.Visible = false
+    t.ZIndex  = zindex
+    return t
+end
+
+for i = 1, SEGMENTS do
+    coneTriangles[i] = newTri(COL_CONE, Z_CONE)
+end
+
+local function hideAll()
+    for i = 1, SEGMENTS do
+        coneTriangles[i].Visible = false
+    end
+end
+
+local function ringPoints(cx, cy, cz, radius, yOffset, n)
+    local pts    = {}
+    local worldY = cy + yOffset
+    for i = 1, n do
+        local angle = ((i - 1) / n) * math.pi * 2
+        local wx = cx + math.cos(angle) * radius
+        local wz = cz + math.sin(angle) * radius
+        local s, on = WorldToScreen(Vector3.new(wx, worldY, wz))
+        pts[i] = { sx = s.X, sy = s.Y, on = on }
+    end
+    return pts
+end
+
+local function drawHat(hx, hy, hz)
+    local apexScreen, apexOn = WorldToScreen(Vector3.new(hx, hy + HAT_Y + HAT_HEIGHT, hz))
+    local baseRing = ringPoints(hx, hy, hz, HAT_RADIUS, HAT_Y, SEGMENTS)
+
+    for i = 1, SEGMENTS do
+        local ni  = (i % SEGMENTS) + 1
+        local p1  = baseRing[i]
+        local p2  = baseRing[ni]
+        local tri = coneTriangles[i]
+        if apexOn and (p1.on or p2.on) then
+            tri.PointA  = Vector2.new(apexScreen.X, apexScreen.Y)
+            tri.PointB  = Vector2.new(p1.sx, p1.sy)
+            tri.PointC  = Vector2.new(p2.sx, p2.sy)
+            tri.Visible = true
+        else
+            tri.Visible = false
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        task.wait(REFRESH_RATE)
+        local player = Players:FindFirstChild(MY_NAME)
+        if player then
+            local char = player.Character
+            if char then
+                local head = char:FindFirstChild('Head')
+                if head then
+                    drawHat(head.Position.X, head.Position.Y, head.Position.Z)
+                else
+                    hideAll()
+                end
+            else
+                hideAll()
+            end
+        else
+            hideAll()
+        end
+    end
+end)
