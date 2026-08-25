@@ -38,23 +38,23 @@ local function farmPriorityBlocked()
     return S.fruitPriorityActive == true
 end
 
--- Small ten-second Discord banner at the top of the screen.
-task.spawn(function()
-    local viewportX = 1280
+-- Blocking ten-second Discord promo. The rest of the script loads afterward.
+do
+    local viewportX, viewportY = 1280, 720
     pcall(function()
         local viewport = game.Workspace.CurrentCamera.ViewportSize
-        if viewport and viewport.X then viewportX = viewport.X end
+        if viewport and viewport.X and viewport.Y then
+            viewportX, viewportY = viewport.X, viewport.Y
+        end
     end)
 
-    local bannerWidth, bannerHeight = 570, 92
-    local bannerX, bannerY = math.floor((viewportX - bannerWidth) / 2), 22
-    local buttonWidth, buttonHeight = 160, 36
-    local buttonX = bannerX + bannerWidth - buttonWidth - 18
-    local buttonY = bannerY + 44
-    local bannerObjects = {}
+    local buttonWidth, buttonHeight = 260, 48
+    local buttonX = math.floor((viewportX - buttonWidth) / 2)
+    local buttonY = math.floor(viewportY / 2) + 62
+    local promoObjects = {}
 
     local function keep(object)
-        table.insert(bannerObjects, object)
+        table.insert(promoObjects, object)
         return object
     end
 
@@ -85,14 +85,15 @@ task.spawn(function()
         return object
     end
 
-    square(bannerX, bannerY, bannerWidth, bannerHeight, Color3.fromRGB(18, 20, 27), 900)
-    square(bannerX, bannerY, bannerWidth, 4, Color3.fromRGB(0, 200, 105), 901)
-    textLabel("laced.lol Lite", bannerX + 18, bannerY + 15, 18, false, Color3.fromRGB(255,255,255), 903)
-    textLabel("To get the full version join the discord server", bannerX + 18, bannerY + 45, 15, false, Color3.fromRGB(205,210,220), 903)
+    local background = square(-5, -5, viewportX + 10, viewportY + 10, Color3.fromRGB(0,0,0), 900)
+    local accent = square(math.floor(viewportX / 2) - 110, math.floor(viewportY / 2) - 76, 220, 4, Color3.fromRGB(0,200,105), 901)
+    local title = textLabel("laced.lol Lite", viewportX / 2, math.floor(viewportY / 2) - 55, 28, true, Color3.fromRGB(255,255,255), 903)
+    local message = textLabel("bud, join the discord server for the script", viewportX / 2, math.floor(viewportY / 2) - 8, 20, true, Color3.fromRGB(220,225,235), 903)
+    local linkText = textLabel(DISCORD_LINK, viewportX / 2, math.floor(viewportY / 2) + 28, 16, true, Color3.fromRGB(0,215,115), 903)
     local copyButton = square(buttonX, buttonY, buttonWidth, buttonHeight, Color3.fromRGB(0,180,95), 902)
-    textLabel("Copy Discord Link", buttonX + buttonWidth / 2, buttonY + 9, 16, true, Color3.fromRGB(255,255,255), 903)
+    local copyText = textLabel("Copy Discord Link", viewportX / 2, buttonY + 13, 18, true, Color3.fromRGB(255,255,255), 903)
 
-    notify("To get the full version join the discord server", "laced.lol", 10)
+    notify("bud, join the discord server for the script", "laced.lol", 10)
 
     local Mouse = nil
     pcall(function() Mouse = LocalPlayer:GetMouse() end)
@@ -100,6 +101,23 @@ task.spawn(function()
     local wasPressed = false
 
     while os.clock() - startedAt < 10 do
+        pcall(function()
+            local viewport = game.Workspace.CurrentCamera.ViewportSize
+            if viewport and viewport.X and viewport.Y
+                and (viewport.X ~= viewportX or viewport.Y ~= viewportY) then
+                viewportX, viewportY = viewport.X, viewport.Y
+                buttonX = math.floor((viewportX - buttonWidth) / 2)
+                buttonY = math.floor(viewportY / 2) + 62
+                background.Size = Vector2.new(viewportX + 10, viewportY + 10)
+                accent.Position = Vector2.new(math.floor(viewportX / 2) - 110, math.floor(viewportY / 2) - 76)
+                title.Position = Vector2.new(viewportX / 2, math.floor(viewportY / 2) - 55)
+                message.Position = Vector2.new(viewportX / 2, math.floor(viewportY / 2) - 8)
+                linkText.Position = Vector2.new(viewportX / 2, math.floor(viewportY / 2) + 28)
+                copyButton.Position = Vector2.new(buttonX, buttonY)
+                copyText.Position = Vector2.new(viewportX / 2, buttonY + 13)
+            end
+        end)
+
         local mouseX, mouseY = -1, -1
         if Mouse then
             local okMouse, x, y = pcall(function() return Mouse.X, Mouse.Y end)
@@ -123,10 +141,10 @@ task.spawn(function()
         task.wait()
     end
 
-    for _, object in ipairs(bannerObjects) do
+    for _, object in ipairs(promoObjects) do
         pcall(function() object:Remove() end)
     end
-end)
+end
 
 -- UI
 local Library = WabiSabiUILibrary
