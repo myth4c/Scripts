@@ -1,0 +1,966 @@
+-- laced.lol Blox Fruits Lite for Matcha
+
+local DISCORD_LINK = "https://discord.gg/nEVuMCZmqR"
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+if not LocalPlayer then
+    repeat
+        wait(0.1)
+        LocalPlayer = Players.LocalPlayer
+    until LocalPlayer
+end
+
+local S = {
+    autoFarmNearest = false,
+    autoFarmChests = false,
+    autoFarmFruits = false,
+    fruitPriorityActive = false,
+    fruitEsp = false,
+    chestEsp = false,
+    autoHaki = false,
+    autoKen = false,
+    remoteMode = false,
+    weaponSlot = 1,
+    chestIndex = 1,
+    FARM_SPEED = 320,
+    CHEST_SPEED = 320,
+    FRUIT_SPEED = 320,
+    espLabels = {},
+    espLabelCache = {},
+    chamBoxes = {},
+    chamBoxCache = {},
+    chestEspLabels = {},
+    chestEspLabelCache = {},
+}
+
+local function farmPriorityBlocked()
+    return S.fruitPriorityActive == true
+end
+
+-- Small ten-second Discord banner at the top of the screen.
+task.spawn(function()
+    local viewportX = 1280
+    pcall(function()
+        local viewport = game.Workspace.CurrentCamera.ViewportSize
+        if viewport and viewport.X then viewportX = viewport.X end
+    end)
+
+    local bannerWidth, bannerHeight = 570, 92
+    local bannerX, bannerY = math.floor((viewportX - bannerWidth) / 2), 22
+    local buttonWidth, buttonHeight = 160, 36
+    local buttonX = bannerX + bannerWidth - buttonWidth - 18
+    local buttonY = bannerY + 44
+    local bannerObjects = {}
+
+    local function keep(object)
+        table.insert(bannerObjects, object)
+        return object
+    end
+
+    local function square(x, y, w, h, color, z)
+        local object = keep(Drawing.new("Square"))
+        object.Position = Vector2.new(x, y)
+        object.Size = Vector2.new(w, h)
+        object.Color = color
+        object.Transparency = 1
+        object.Filled = true
+        object.ZIndex = z
+        object.Visible = true
+        return object
+    end
+
+    local function textLabel(text, x, y, size, centered, color, z)
+        local object = keep(Drawing.new("Text"))
+        object.Text = text
+        object.Position = Vector2.new(x, y)
+        object.Size = size
+        object.Color = color
+        object.Transparency = 1
+        object.Center = centered
+        object.Outline = true
+        object.Font = Drawing.Fonts.SystemBold
+        object.ZIndex = z
+        object.Visible = true
+        return object
+    end
+
+    square(bannerX, bannerY, bannerWidth, bannerHeight, Color3.fromRGB(18, 20, 27), 900)
+    square(bannerX, bannerY, bannerWidth, 4, Color3.fromRGB(0, 200, 105), 901)
+    textLabel("laced.lol Lite", bannerX + 18, bannerY + 15, 18, false, Color3.fromRGB(255,255,255), 903)
+    textLabel("To get the full version join the discord server", bannerX + 18, bannerY + 45, 15, false, Color3.fromRGB(205,210,220), 903)
+    local copyButton = square(buttonX, buttonY, buttonWidth, buttonHeight, Color3.fromRGB(0,180,95), 902)
+    textLabel("Copy Discord Link", buttonX + buttonWidth / 2, buttonY + 9, 16, true, Color3.fromRGB(255,255,255), 903)
+
+    notify("To get the full version join the discord server", "laced.lol", 10)
+
+    local Mouse = nil
+    pcall(function() Mouse = LocalPlayer:GetMouse() end)
+    local startedAt = os.clock()
+    local wasPressed = false
+
+    while os.clock() - startedAt < 10 do
+        local mouseX, mouseY = -1, -1
+        if Mouse then
+            local okMouse, x, y = pcall(function() return Mouse.X, Mouse.Y end)
+            if okMouse and type(x) == "number" and type(y) == "number" then
+                mouseX, mouseY = x, y
+            end
+        end
+
+        local hovering = mouseX >= buttonX and mouseX <= buttonX + buttonWidth
+            and mouseY >= buttonY and mouseY <= buttonY + buttonHeight
+        copyButton.Color = hovering and Color3.fromRGB(0,215,115) or Color3.fromRGB(0,180,95)
+
+        local pressed = false
+        local okPressed, pressedValue = pcall(function() return ismouse1pressed() end)
+        if okPressed and pressedValue == true then pressed = true end
+        if hovering and pressed and not wasPressed then
+            local copied = pcall(function() setclipboard(DISCORD_LINK) end)
+            notify(copied and "Discord link copied!" or DISCORD_LINK, "laced.lol", 3)
+        end
+        wasPressed = pressed
+        task.wait()
+    end
+
+    for _, object in ipairs(bannerObjects) do
+        pcall(function() object:Remove() end)
+    end
+end)
+
+-- UI
+local Library = WabiSabiUILibrary
+if not Library then
+    local uiUrls = {
+        "https://raw.githubusercontent.com/myth4c/Scripts2/refs/heads/main/wabisabi%20lib",
+    }
+    local lastError = "no valid UI response"
+
+    for _, uiUrl in ipairs(uiUrls) do
+        local okFetch, source = pcall(function() return game:HttpGet(uiUrl) end)
+        if okFetch and type(source) == "string" then
+            local trimmed = string.match(source, "^%s*(.-)%s*$") or source
+            local looksValid = #source > 1000
+                and string.sub(trimmed, 1, 3) ~= "404"
+                and not string.match(string.lower(trimmed), "^not found")
+
+            if looksValid then
+                local loader = nil
+                local parseError = nil
+                local okParse = pcall(function()
+                    loader, parseError = loadstring(source, "WabiSabiUI")
+                end)
+                if okParse and type(loader) == "function" then
+                    local okRun, result = pcall(loader)
+                    if okRun then
+                        Library = result or WabiSabiUILibrary
+                        if Library then break end
+                    else
+                        lastError = "UI runtime error: " .. tostring(result)
+                    end
+                else
+                    lastError = "UI parse error: " .. tostring(parseError)
+                end
+            else
+                lastError = "invalid response from " .. uiUrl
+            end
+        else
+            lastError = "download failed from " .. uiUrl .. ": " .. tostring(source)
+        end
+    end
+
+    if not Library then
+        warn("Failed to load WabiSabi UI: " .. lastError)
+        notify("UI download failed. Try running the script again.", "laced.lol", 6)
+        return
+    end
+end
+
+local Window = Library:CreateWindow({
+    Title = "laced.lol Lite",
+    Columns = 2,
+    Divider = true,
+    ConfigFile = "laced_bloxfruits_lite.json",
+    BuiltInIndicatorToggle = false,
+    Width = 540,
+    Height = 410,
+    Theme = { Colors = { Accent = Color3.fromRGB(0,170,80) } }
+})
+
+local MainTab = Window:AddTab("Lite")
+
+task.spawn(function()
+    task.wait(0.2)
+    pcall(function() Window.Indicator:SetVisible(false) end)
+    pcall(function() Window.Config.IndicatorEnabled = false end)
+end)
+
+MainTab:AddSection("Farming", { Column = 1 })
+
+MainTab:AddToggle("auto_farm_nearest", {
+    Text = "Auto Farm Nearest",
+    Description = "Farms the nearest living enemy",
+    Default = false,
+    Keybind = true,
+    Column = 1,
+    Callback = function(value)
+        S.autoFarmNearest = value
+        notify(value and "Auto Farm Nearest ON!" or "Auto Farm Nearest OFF!", "laced.lol", 2)
+    end
+})
+
+MainTab:AddToggle("auto_farm_chests", {
+    Text = "Auto Farm Chests",
+    Description = "Automatically travels to spawned chests",
+    Default = false,
+    Keybind = true,
+    Column = 1,
+    Callback = function(value)
+        S.autoFarmChests = value
+        if value then S.chestIndex = 1 end
+        notify(value and "Auto Farm Chests ON!" or "Auto Farm Chests OFF!", "laced.lol", 2)
+    end
+})
+
+MainTab:AddToggle("auto_farm_fruits", {
+    Text = "Auto Farm Fruits",
+    Description = "Collects the nearest detected fruit",
+    Default = false,
+    Keybind = true,
+    Column = 1,
+    Callback = function(value)
+        S.autoFarmFruits = value
+        if not value then S.fruitPriorityActive = false end
+        notify(value and "Auto Farm Fruits ON!" or "Auto Farm Fruits OFF!", "laced.lol", 2)
+    end
+})
+
+MainTab:AddToggle("remote_mode", {
+    Text = "Remote Mode (crashable)",
+    Description = "Uses RegisterAttack and RegisterHit within 60 studs. Matcha Pro only.",
+    Default = false,
+    Keybind = true,
+    Column = 1,
+    Callback = function(value)
+        S.remoteMode = value
+        notify(value and "Remote Mode ON!" or "Remote Mode OFF!", "laced.lol", 2)
+    end
+})
+
+MainTab:AddSection("Weapon Selection", { Column = 1 })
+
+local meleeToggle = nil
+local swordToggle = nil
+
+meleeToggle = MainTab:AddToggle("weapon_melee", {
+    Text = "Melee",
+    Description = "Use hotbar slot 1",
+    Default = true,
+    Column = 1,
+    Callback = function(value)
+        if value then
+            S.weaponSlot = 1
+            if swordToggle then pcall(function() swordToggle:SetValue(false) end) end
+        end
+    end
+})
+
+swordToggle = MainTab:AddToggle("weapon_sword", {
+    Text = "Sword",
+    Description = "Use hotbar slot 3",
+    Default = false,
+    Column = 1,
+    Callback = function(value)
+        if value then
+            S.weaponSlot = 3
+            if meleeToggle then pcall(function() meleeToggle:SetValue(false) end) end
+        end
+    end
+})
+
+MainTab:AddSection("ESP", { Column = 2 })
+
+MainTab:AddToggle("fruit_esp", {
+    Text = "Fruit ESP",
+    Description = "Shows boxes and labels on spawned fruits",
+    Default = false,
+    Keybind = true,
+    Column = 2,
+    Callback = function(value)
+        S.fruitEsp = value
+        if value then
+            buildFruitEsp()
+        else
+            clearFruitEsp()
+        end
+        notify(value and "Fruit ESP ON!" or "Fruit ESP OFF!", "laced.lol", 2)
+    end
+})
+
+MainTab:AddToggle("chest_esp", {
+    Text = "Chest ESP",
+    Description = "Shows labels on spawned chests",
+    Default = false,
+    Keybind = true,
+    Column = 2,
+    Callback = function(value)
+        S.chestEsp = value
+        if value then buildChestEsp() else clearChestEsp() end
+        notify(value and "Chest ESP ON!" or "Chest ESP OFF!", "laced.lol", 2)
+    end
+})
+
+MainTab:AddSection("Combat", { Column = 2 })
+
+MainTab:AddToggle("auto_haki", {
+    Text = "Auto Haki",
+    Description = "Keeps Armament Haki active",
+    Default = false,
+    Keybind = true,
+    Column = 2,
+    Callback = function(value)
+        S.autoHaki = value
+        notify(value and "Auto Haki ON!" or "Auto Haki OFF!", "laced.lol", 2)
+    end
+})
+
+MainTab:AddToggle("auto_ken", {
+    Text = "Auto Ken",
+    Description = "Keeps Observation Haki active",
+    Default = false,
+    Keybind = true,
+    Column = 2,
+    Callback = function(value)
+        S.autoKen = value
+        notify(value and "Auto Ken ON!" or "Auto Ken OFF!", "laced.lol", 2)
+    end
+})
+
+-- Shared helpers
+local function safePosition(instance)
+    if not instance then return nil end
+    local okParent, parent = pcall(function() return instance.Parent end)
+    if not okParent or not parent then return nil end
+    local okPosition, position = pcall(function() return instance.Position end)
+    if okPosition and position and position.X and position.Y and position.Z then return position end
+    return nil
+end
+
+local function resolveFruitPart(root)
+    if not root then return nil end
+    local okClass, className = pcall(function() return root.ClassName end)
+    if okClass and className == "Tool" then
+        local okHandle, handle = pcall(function() return root:FindFirstChild("Handle") end)
+        if okHandle and handle and safePosition(handle) then return handle end
+        local okPart, part = pcall(function() return root:FindFirstChildOfClass("BasePart") end)
+        if okPart and part and safePosition(part) then return part end
+    end
+    if safePosition(root) then return root end
+    for _, childName in pairs({"Handle", "Fruit"}) do
+        local okChild, child = pcall(function() return root:FindFirstChild(childName) end)
+        if okChild and child then
+            if safePosition(child) then return child end
+            local okInner, inner = pcall(function() return child:FindFirstChild("Fruit") end)
+            if okInner and inner and safePosition(inner) then return inner end
+        end
+    end
+    local okDesc, descendants = pcall(function() return root:GetDescendants() end)
+    if okDesc and descendants then
+        for _, descendant in pairs(descendants) do
+            if safePosition(descendant) then return descendant end
+        end
+    end
+    return nil
+end
+
+local function instanceKey(instance)
+    local okAddress, address = pcall(function() return instance.Address end)
+    if okAddress and address and address ~= 0 then return "addr:" .. tostring(address) end
+    local position = safePosition(instance)
+    if position then
+        return tostring(instance) .. ":" .. tostring(position.X) .. ":" .. tostring(position.Y) .. ":" .. tostring(position.Z)
+    end
+    return tostring(instance)
+end
+
+local function getWorkspaceFruits()
+    local fruits, seen = {}, {}
+    local okChildren, children = pcall(function() return game.Workspace:GetChildren() end)
+    if not okChildren or not children then return fruits end
+
+    local function addFruit(root, name)
+        local part = resolveFruitPart(root)
+        local position = safePosition(part)
+        if not part or not position then return end
+        local key = instanceKey(part)
+        if seen[key] then return end
+        for _, existing in pairs(fruits) do
+            local existingPosition = existing.position or safePosition(existing.part)
+            if existingPosition then
+                local dx = position.X - existingPosition.X
+                local dy = position.Y - existingPosition.Y
+                local dz = position.Z - existingPosition.Z
+                if dx * dx + dy * dy + dz * dz <= 9 then return end
+            end
+        end
+        seen[key] = true
+        table.insert(fruits, {part = part, position = position, name = name or "Spawned Fruit"})
+    end
+
+    for _, object in pairs(children) do
+        local okName, objectName = pcall(function() return object.Name end)
+        objectName = okName and objectName or ""
+        if string.match(string.lower(objectName), "fruit") then addFruit(object, objectName) end
+        local okFolder, fruitFolder = pcall(function() return object:FindFirstChild("Fruit") end)
+        if okFolder and fruitFolder then addFruit(fruitFolder, objectName ~= "" and objectName or "Spawned Fruit") end
+    end
+    return fruits
+end
+
+local function tweenTo(hrp, targetPosition, checkFunction)
+    if not hrp or not targetPosition then return end
+    local okStart, startPosition = pcall(function() return hrp.Position end)
+    if not okStart or not startPosition then return end
+    local dx = targetPosition.X - startPosition.X
+    local dy = targetPosition.Y - startPosition.Y
+    local dz = targetPosition.Z - startPosition.Z
+    local distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+    if distance <= 1 then
+        pcall(function() hrp.Position = targetPosition end)
+        return
+    end
+    local duration = distance / 320
+    local startedAt = os.clock()
+    while true do
+        if checkFunction and not checkFunction() then return end
+        local okParent, parent = pcall(function() return hrp.Parent end)
+        if not okParent or not parent then return end
+        local alpha = math.min((os.clock() - startedAt) / duration, 1)
+        local newPosition = Vector3.new(
+            startPosition.X + dx * alpha,
+            startPosition.Y + dy * alpha,
+            startPosition.Z + dz * alpha
+        )
+        local okMove = pcall(function()
+            hrp.Position = newPosition
+            hrp.Velocity = Vector3.new(0,0,0)
+            hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+        end)
+        if not okMove or alpha >= 1 then break end
+        task.wait(0.01)
+    end
+end
+
+local function getHeldTool()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    local okChildren, children = pcall(function() return char:GetChildren() end)
+    if not okChildren or not children then return nil end
+    for _, child in pairs(children) do
+        local okClass, className = pcall(function() return child.ClassName end)
+        if okClass and className == "Tool" then return child end
+    end
+    return nil
+end
+
+local function getFarmOffsets()
+    local hasSanguine = false
+    local char = LocalPlayer and LocalPlayer.Character or nil
+    local backpack = LocalPlayer and LocalPlayer:FindFirstChild("Backpack") or nil
+
+    local okSanguine = pcall(function()
+        hasSanguine = (backpack and backpack:FindFirstChild("Sanguine Art") ~= nil)
+            or (char and char:FindFirstChild("Sanguine Art") ~= nil)
+    end)
+    if not okSanguine then hasSanguine = false end
+
+    return hasSanguine and 15 or 0, 23, 0
+end
+
+local function pressWeaponSlot(slot)
+    local key = slot == 3 and 0x33 or 0x31
+    pcall(function()
+        setrobloxinput(true)
+        keyrelease(key)
+        task.wait(0.02)
+        keypress(key)
+        task.wait(0.1)
+        keyrelease(key)
+    end)
+    if getHeldTool() then return true end
+
+    -- Fallback for Matcha states that swallow synthetic hotbar input.
+    local char = LocalPlayer and LocalPlayer.Character or nil
+    local backpack = LocalPlayer and LocalPlayer:FindFirstChild("Backpack") or nil
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid") or nil
+    if not char or not backpack then return false end
+
+    local tools = {}
+    local okChildren, children = pcall(function() return backpack:GetChildren() end)
+    if okChildren and children then
+        for _, candidate in pairs(children) do
+            local okClass, className = pcall(function() return candidate.ClassName end)
+            if okClass and className == "Tool" then table.insert(tools, candidate) end
+        end
+    end
+
+    local tool = tools[slot]
+    if not tool then return false end
+    if humanoid then pcall(function() humanoid:EquipTool(tool) end) end
+    local okParent, parent = pcall(function() return tool.Parent end)
+    if okParent and parent == char then return true end
+    pcall(function() tool.Parent = char end)
+    okParent, parent = pcall(function() return tool.Parent end)
+    return okParent and parent == char
+end
+
+local function isAlive(model)
+    if not model then return false end
+    local okParent, parent = pcall(function() return model.Parent end)
+    if not okParent or not parent then return false end
+    local humanoid = model:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        local okHealth, health = pcall(function() return humanoid.Health end)
+        if okHealth and health and health <= 0 then return false end
+    end
+    return true
+end
+
+-- Remote Mode
+local REMOTE_SESSION_ID = "32501259"
+local REMOTE_MAX_DISTANCE = 60
+local registerAttack = nil
+local registerHit = nil
+
+local function ensureRemotes()
+    if registerAttack and registerHit then return true end
+    local modules = game:GetService("ReplicatedStorage"):FindFirstChild("Modules")
+    local net = modules and modules:FindFirstChild("Net") or nil
+    if not net then return false end
+    registerAttack = net:FindFirstChild("RE/RegisterAttack")
+    registerHit = net:FindFirstChild("RE/RegisterHit")
+    return registerAttack ~= nil and registerHit ~= nil
+end
+
+local function remoteAttack()
+    if not ensureRemotes() then return end
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart") or nil
+    local myPosition = hrp and safePosition(hrp) or nil
+    local enemies = game.Workspace:FindFirstChild("Enemies")
+    if not myPosition or not enemies then return end
+
+    local hitTable, primaryPart = {}, nil
+    for _, enemy in pairs(enemies:GetChildren()) do
+        if isAlive(enemy) then
+            local part = enemy:FindFirstChild("LeftLowerLeg")
+                or enemy:FindFirstChild("Head")
+                or enemy:FindFirstChild("HumanoidRootPart")
+            local position = safePosition(part)
+            if part and position then
+                local dx = position.X - myPosition.X
+                local dy = position.Y - myPosition.Y
+                local dz = position.Z - myPosition.Z
+                if math.sqrt(dx * dx + dy * dy + dz * dz) <= REMOTE_MAX_DISTANCE then
+                    table.insert(hitTable, {enemy, part})
+                    if not primaryPart then primaryPart = part end
+                end
+            end
+        end
+    end
+    if #hitTable == 0 then return end
+    pcall(function() registerAttack:FireServer(0.5) end)
+    task.wait()
+    pcall(function() registerHit:FireServer(primaryPart, hitTable, nil, REMOTE_SESSION_ID) end)
+end
+
+local function getNearestEnemy(hrp)
+    local enemies = game.Workspace:FindFirstChild("Enemies")
+    local myPosition = safePosition(hrp)
+    if not enemies or not myPosition then return nil end
+    local nearest, nearestDistance = nil, math.huge
+    for _, enemy in pairs(enemies:GetChildren()) do
+        if isAlive(enemy) then
+            local root = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChildOfClass("BasePart")
+            local position = safePosition(root)
+            if position then
+                local dx = position.X - myPosition.X
+                local dy = position.Y - myPosition.Y
+                local dz = position.Z - myPosition.Z
+                local distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+                if distance < nearestDistance and distance <= 1000 then
+                    nearest, nearestDistance = enemy, distance
+                end
+            end
+        end
+    end
+    return nearest
+end
+
+-- ESP
+function clearFruitEsp()
+    for _, entry in pairs(S.espLabels) do if entry.label then entry.label.Visible = false end end
+    for _, entry in pairs(S.chamBoxes) do
+        for _, line in pairs(entry.lines or {}) do line.Visible = false end
+    end
+    S.espLabels, S.chamBoxes = {}, {}
+end
+
+function buildFruitEsp()
+    clearFruitEsp()
+    for _, fruit in pairs(getWorkspaceFruits()) do
+        local key = instanceKey(fruit.part)
+        if not S.espLabelCache[key] then
+            local label = Drawing.new("Text")
+            label.Text = fruit.name
+            label.Color = Color3.fromRGB(0,255,90)
+            label.Size = 14
+            label.Outline = true
+            label.Center = true
+            label.Font = Drawing.Fonts.Monospace
+            label.ZIndex = 10
+            label.Visible = false
+            S.espLabelCache[key] = {label = label, part = fruit.part}
+        else
+            S.espLabelCache[key].part = fruit.part
+            S.espLabelCache[key].label.Text = fruit.name
+        end
+        table.insert(S.espLabels, S.espLabelCache[key])
+
+        if not S.chamBoxCache[key] then
+            local lines = {}
+            for _ = 1, 4 do
+                local line = Drawing.new("Line")
+                line.Color = Color3.fromRGB(0,255,90)
+                line.Thickness = 2
+                line.ZIndex = 9
+                line.Visible = false
+                table.insert(lines, line)
+            end
+            S.chamBoxCache[key] = {lines = lines, part = fruit.part}
+        else
+            S.chamBoxCache[key].part = fruit.part
+        end
+        table.insert(S.chamBoxes, S.chamBoxCache[key])
+    end
+end
+
+function clearChestEsp()
+    for _, entry in pairs(S.chestEspLabels) do if entry.label then entry.label.Visible = false end end
+    S.chestEspLabels = {}
+end
+
+function buildChestEsp()
+    clearChestEsp()
+    local chestModels = game.Workspace:FindFirstChild("ChestModels")
+    if not chestModels then return end
+    for _, chest in pairs(chestModels:GetChildren()) do
+        local part = chest:FindFirstChild("RootPart") or chest:FindFirstChildOfClass("BasePart")
+        if safePosition(part) then
+            local key = instanceKey(part)
+            local okName, name = pcall(function() return chest.Name end)
+            name = (okName and name and name ~= "") and name or "Chest"
+            local color = Color3.fromRGB(235,235,235)
+            if name == "SilverChest" then color = Color3.fromRGB(165,165,165)
+            elseif name == "GoldChest" then color = Color3.fromRGB(255,215,55)
+            elseif name == "DiamondChest" then color = Color3.fromRGB(85,205,255) end
+            if not S.chestEspLabelCache[key] then
+                local label = Drawing.new("Text")
+                label.Text = name
+                label.Color = color
+                label.Size = 14
+                label.Outline = true
+                label.Center = true
+                label.Font = Drawing.Fonts.Monospace
+                label.ZIndex = 10
+                label.Visible = false
+                S.chestEspLabelCache[key] = {label = label, part = part}
+            else
+                S.chestEspLabelCache[key].part = part
+                S.chestEspLabelCache[key].label.Text = name
+                S.chestEspLabelCache[key].label.Color = color
+            end
+            table.insert(S.chestEspLabels, S.chestEspLabelCache[key])
+        end
+    end
+end
+
+-- Auto Farm Chests
+task.spawn(function()
+    local lastCount = 0
+    while true do
+        if S.autoFarmChests and not farmPriorityBlocked() then
+            local chests = game.Workspace:FindFirstChild("ChestModels")
+            local children = chests and chests:GetChildren() or {}
+            local count = #children
+            if count ~= lastCount then S.chestIndex, lastCount = 1, count end
+            if count > 0 then
+                if S.chestIndex > count then S.chestIndex = 1 end
+                local chest = children[S.chestIndex]
+                local root = chest and (chest:FindFirstChild("RootPart") or chest:FindFirstChildOfClass("BasePart")) or nil
+                local position = safePosition(root)
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart") or nil
+                if position and hrp then
+                    tweenTo(hrp, Vector3.new(position.X, position.Y + 3, position.Z), function()
+                        return S.autoFarmChests and not farmPriorityBlocked()
+                    end)
+                end
+                S.chestIndex = S.chestIndex + 1
+            end
+            task.wait(0.35)
+        else
+            task.wait(0.1)
+        end
+    end
+end)
+
+-- Auto Farm Fruits
+task.spawn(function()
+    while true do
+        if S.autoFarmFruits then
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart") or nil
+            local hrpPosition = safePosition(hrp)
+            local bestPart, bestDistance = nil, math.huge
+            if hrp and hrpPosition then
+                for _, fruit in pairs(getWorkspaceFruits()) do
+                    local position = safePosition(fruit.part)
+                    if position then
+                        local dx = position.X - hrpPosition.X
+                        local dy = position.Y - hrpPosition.Y
+                        local dz = position.Z - hrpPosition.Z
+                        local distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+                        if distance < bestDistance then bestPart, bestDistance = fruit.part, distance end
+                    end
+                end
+            end
+
+            if bestPart and hrp then
+                S.fruitPriorityActive = true
+                local position = safePosition(bestPart)
+                if position then
+                    tweenTo(hrp, Vector3.new(position.X, position.Y + 3, position.Z), function()
+                        local okParent, parent = pcall(function() return bestPart.Parent end)
+                        return S.autoFarmFruits and okParent and parent ~= nil
+                    end)
+                    if S.autoFarmFruits then
+                        task.wait(1)
+                        pressWeaponSlot(S.weaponSlot)
+                    end
+                end
+                local waitStarted = os.clock()
+                while S.autoFarmFruits and os.clock() - waitStarted < 3 do
+                    local okParent, parent = pcall(function() return bestPart.Parent end)
+                    if not okParent or not parent then break end
+                    task.wait(0.05)
+                end
+                S.fruitPriorityActive = false
+            else
+                S.fruitPriorityActive = false
+            end
+        end
+        task.wait(0.1)
+    end
+end)
+
+-- Auto Farm Nearest
+task.spawn(function()
+    while true do
+        if S.autoFarmNearest and not farmPriorityBlocked() then
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart") or nil
+            if hrp then
+                if not getHeldTool() then pressWeaponSlot(S.weaponSlot) end
+                local enemy = getNearestEnemy(hrp)
+                if enemy then
+                    local useRemote = S.remoteMode
+                    local reached = false
+                    local lastAttack = 0
+                    while S.autoFarmNearest and S.remoteMode == useRemote and not farmPriorityBlocked() and isAlive(enemy) do
+                        if not useRemote then
+                            local head = enemy:FindFirstChild("Head")
+                            if head then
+                                pcall(function()
+                                    head.Size = Vector3.new(50, 50, 50)
+                                    head.CanCollide = false
+                                end)
+                            end
+                        end
+                        local root = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChildOfClass("BasePart")
+                        local position = safePosition(root)
+                        if not position then break end
+                        local offsetX, offsetY, offsetZ = getFarmOffsets()
+                        local target = Vector3.new(
+                            position.X + offsetX,
+                            position.Y + offsetY,
+                            position.Z + offsetZ
+                        )
+                        if not reached then
+                            tweenTo(hrp, target, function()
+                                return S.autoFarmNearest and S.remoteMode == useRemote and not farmPriorityBlocked() and isAlive(enemy)
+                            end)
+                            reached = true
+                        else
+                            pcall(function()
+                                hrp.Position = target
+                                hrp.Velocity = Vector3.new(0,0,0)
+                                hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+                            end)
+                        end
+
+                        local now = os.clock()
+                        if now - lastAttack >= (useRemote and 0.05 or 0.06) then
+                            lastAttack = now
+                            if useRemote then task.spawn(remoteAttack) else mouse1click() end
+                        end
+                        task.wait()
+                    end
+                end
+            end
+        end
+        task.wait(0.1)
+    end
+end)
+
+-- Fruit and chest ESP update loops
+task.spawn(function()
+    while true do
+        if S.fruitEsp then
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart") or nil
+            local playerPosition = safePosition(hrp)
+            for _, entry in pairs(S.espLabels) do
+                local position = safePosition(entry.part)
+                if position and playerPosition then
+                    local dx = position.X - playerPosition.X
+                    local dy = position.Y - playerPosition.Y
+                    local dz = position.Z - playerPosition.Z
+                    local distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+                    if distance <= 10000 then
+                        local okScreen, screenPosition, onScreen = pcall(function() return WorldToScreen(position) end)
+                        entry.label.Visible = okScreen and onScreen or false
+                        if okScreen and onScreen then entry.label.Position = Vector2.new(screenPosition.X, screenPosition.Y - 20) end
+                    else
+                        entry.label.Visible = false
+                    end
+                else
+                    entry.label.Visible = false
+                end
+            end
+
+            for _, entry in pairs(S.chamBoxes) do
+                local position = safePosition(entry.part)
+                local okSize, size = pcall(function() return entry.part.Size end)
+                if position and okSize and size then
+                    local halfX, halfY = size.X * 0.5, size.Y * 0.5
+                    local points = {
+                        Vector3.new(position.X-halfX, position.Y-halfY, position.Z),
+                        Vector3.new(position.X+halfX, position.Y-halfY, position.Z),
+                        Vector3.new(position.X-halfX, position.Y+halfY, position.Z),
+                        Vector3.new(position.X+halfX, position.Y+halfY, position.Z),
+                    }
+                    local screens, visible = {}, false
+                    for i, point in ipairs(points) do
+                        local okScreen, screenPosition, onScreen = pcall(function() return WorldToScreen(point) end)
+                        screens[i] = okScreen and screenPosition or nil
+                        if okScreen and onScreen then visible = true end
+                    end
+                    if visible and screens[1] and screens[2] and screens[3] and screens[4] then
+                        entry.lines[1].From, entry.lines[1].To = screens[1], screens[2]
+                        entry.lines[2].From, entry.lines[2].To = screens[3], screens[4]
+                        entry.lines[3].From, entry.lines[3].To = screens[1], screens[3]
+                        entry.lines[4].From, entry.lines[4].To = screens[2], screens[4]
+                        for _, line in pairs(entry.lines) do line.Visible = true end
+                    else
+                        for _, line in pairs(entry.lines) do line.Visible = false end
+                    end
+                end
+            end
+        end
+        task.wait(0.05)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if S.chestEsp then
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart") or nil
+            local playerPosition = safePosition(hrp)
+            for _, entry in pairs(S.chestEspLabels) do
+                local position = safePosition(entry.part)
+                if position and playerPosition then
+                    local dx = position.X - playerPosition.X
+                    local dy = position.Y - playerPosition.Y
+                    local dz = position.Z - playerPosition.Z
+                    local distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+                    if distance <= 10000 then
+                        local okScreen, screenPosition, onScreen = pcall(function() return WorldToScreen(position) end)
+                        entry.label.Visible = okScreen and onScreen or false
+                        if okScreen and onScreen then entry.label.Position = Vector2.new(screenPosition.X, screenPosition.Y - 20) end
+                    else
+                        entry.label.Visible = false
+                    end
+                else
+                    entry.label.Visible = false
+                end
+            end
+        end
+        task.wait(0.05)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(2)
+        if S.fruitEsp then buildFruitEsp() end
+        if S.chestEsp then buildChestEsp() end
+    end
+end)
+
+-- Auto Ken and Auto Haki
+task.spawn(function()
+    while true do
+        if S.autoKen then
+            local active = false
+            local okAttribute, value = pcall(function() return LocalPlayer:GetAttribute("KenActive") end)
+            if okAttribute and value == true then active = true end
+            if not active then
+                pcall(function()
+                    setrobloxinput(true)
+                    keypress(0x45)
+                    task.wait(0.1)
+                    keyrelease(0x45)
+                end)
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if S.autoHaki then
+            local char = LocalPlayer.Character
+            if char and not char:FindFirstChild("HasBuso") then
+                pcall(function()
+                    setrobloxinput(true)
+                    keypress(0x4A)
+                    task.wait(0.1)
+                    keyrelease(0x4A)
+                end)
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+while true do
+    local ok, err = pcall(function() Window:Step() end)
+    if not ok then
+        warn("UI step error: " .. tostring(err))
+        task.wait(1)
+    end
+    task.wait()
+end
